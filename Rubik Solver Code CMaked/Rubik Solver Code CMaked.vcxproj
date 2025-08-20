@@ -128,13 +128,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="backup.txt" />
-    <Text Include="backup2.txt" />
+    <ClCompile Include="RubikCube.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="RubikCube.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Backup.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="RubikCube.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

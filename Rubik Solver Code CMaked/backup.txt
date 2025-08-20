@@ -1,8 +1,11 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/videoio.hpp>
 #include <cmath>
+#include <fstream>
 
 using namespace std;
 using namespace cv;
@@ -11,11 +14,14 @@ Mat Raw;
 int thresh = 50, N = 5;
 int minSize = 1200, maxSize = 2700, tolerance = 0, tolDist = 25; // positive means tighter squares;
 
-// helper function:
-// finds a cosine of angle between vectors
-// from pt0->pt1 and from pt0->pt2
+int frontSide = 0, // White
+    upSide = 1; // Blue
+
 static double angle(Point pt1, Point pt2, Point pt0)
 {
+    // finds a cosine of angle between vectors
+    // from pt0->pt1 and from pt0->pt2
+
 	double dx1 = pt1.x - pt0.x;
 	double dy1 = pt1.y - pt0.y;
 	double dx2 = pt2.x - pt0.x;
@@ -66,47 +72,19 @@ enum Color
     Blue = 1,
     Yellow = 2,
     Red = 3,
-    Green = 4,
-    Orange = 5
+    Green = 5,
+    Orange = 4
 };
 
-int color2side(int colorType)
+enum Orientation
 {
-    switch (colorType)
-    {
-    case White:
-        return 0; // front
-    case Orange: 
-        return 1; // up
-    case Red:
-        return 2; // bottom
-    case Green:
-        return 3; // right
-    case Blue:
-        return 4; // left
-    case Yellow:
-        return 5; // back
-    }
-}
-
-int side2color(int side)
-{
-    switch (side)
-    {
-    case 0:
-        return White;
-    case 1:
-        return Orange;
-    case 2:
-        return Red;
-    case 3:
-        return Green;
-    case 4:
-        return Blue;
-    case 5:
-        return Yellow;
-    }
-}
+    Front = 0,
+    Up = 1,
+    Back = 2,
+    Left = 3,
+    Right = 4,
+    Bottom = 5
+};
 
 void copyRC(int(&nrc)[6][3][3], int rc[6][3][3])
 {
@@ -223,73 +201,73 @@ Mat CombineColorFilterResults(Mat frame, vector<int> colorToFilter)
     return end;
 }
 
-static void findSquares(const Mat& image, vector<vector<Point>>& squares)
-{
-    squares.clear();
-
-    Mat timg(image);
-    //medianBlur(image, timg, 3);
-    Mat gray0(timg.size(), CV_8U), gray;
-
-    vector<vector<Point> > contours;
-
-    // find squares in every color plane of the image
-    for (int c = 0; c < 3; c++)
-    {
-        int ch[] = { c, 0 };
-        mixChannels(&timg, 1, &gray0, 1, ch, 1);
-        for (int l = 0; l < N; l++)
-        {
-            // hack: use Canny instead of zero threshold level.
-            // Canny helps to catch squares with gradient shading
-            if (l == 0)
-            {
-                // apply Canny. Take the upper threshold from slider
-                // and set the lower to 0 (which forces edges merging)
-                Canny(gray0, gray, 5, thresh, 5);
-                // dilate canny output to remove potential
-                // holes between edge segments
-                dilate(gray, gray, Mat(), Point(-1, -1));
-            }
-            else
-            {
-                gray = gray0 >= (l + 1) * 255 / N;
-            }
-
-            // find contours and store them all as a list
-            findContours(gray, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
-
-            vector<Point> approx;
-
-            // test each contour
-            for (size_t i = 0; i < contours.size(); i++)
-            {
-                approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true) * 0.02, true);
-
-                if (approx.size() == 4 &&
-                    fabs(contourArea(Mat(approx))) > minSize &&
-                    fabs(contourArea(Mat(approx))) < maxSize &&
-                    isContourConvex(Mat(approx)))
-                {
-                    double maxCosine = 0;
-
-                    for (int j = 2; j < 5; j++)
-                    {
-                        // find the maximum cosine of the angle between joint edges
-                        double cosine = fabs(angle(approx[j % 4], approx[j - 2], approx[j - 1]));
-                        maxCosine = MAX(maxCosine, cosine);
-                    }
-
-                    // if cosines of all angles are small
-                    // (all angles are ~90 degree) then write quandrange
-                    // vertices to resultant sequence
-                    if (maxCosine < 0.3)
-                        squares.push_back(approx);
-                }
-            }
-        }
-    }
-}
+//static void findSquares(const Mat& image, vector<vector<Point>>& squares)
+//{
+//    squares.clear();
+//
+//    Mat timg(image);
+//    //medianBlur(image, timg, 3);
+//    Mat gray0(timg.size(), CV_8U), gray;
+//
+//    vector<vector<Point> > contours;
+//
+//    // find squares in every color plane of the image
+//    for (int c = 0; c < 3; c++)
+//    {
+//        int ch[] = { c, 0 };
+//        mixChannels(&timg, 1, &gray0, 1, ch, 1);
+//        for (int l = 0; l < N; l++)
+//        {
+//            // hack: use Canny instead of zero threshold level.
+//            // Canny helps to catch squares with gradient shading
+//            if (l == 0)
+//            {
+//                // apply Canny. Take the upper threshold from slider
+//                // and set the lower to 0 (which forces edges merging)
+//                Canny(gray0, gray, 5, thresh, 5);
+//                // dilate canny output to remove potential
+//                // holes between edge segments
+//                dilate(gray, gray, Mat(), Point(-1, -1));
+//            }
+//            else
+//            {
+//                gray = gray0 >= (l + 1) * 255 / N;
+//            }
+//
+//            // find contours and store them all as a list
+//            findContours(gray, contours, RETR_LIST, CHAIN_APPROX_SIMPLE);
+//
+//            vector<Point> approx;
+//
+//            // test each contour
+//            for (size_t i = 0; i < contours.size(); i++)
+//            {
+//                approxPolyDP(Mat(contours[i]), approx, arcLength(Mat(contours[i]), true) * 0.02, true);
+//
+//                if (approx.size() == 4 &&
+//                    fabs(contourArea(Mat(approx))) > minSize &&
+//                    fabs(contourArea(Mat(approx))) < maxSize &&
+//                    isContourConvex(Mat(approx)))
+//                {
+//                    double maxCosine = 0;
+//
+//                    for (int j = 2; j < 5; j++)
+//                    {
+//                        // find the maximum cosine of the angle between joint edges
+//                        double cosine = fabs(angle(approx[j % 4], approx[j - 2], approx[j - 1]));
+//                        maxCosine = MAX(maxCosine, cosine);
+//                    }
+//
+//                    // if cosines of all angles are small
+//                    // (all angles are ~90 degree) then write quandrange
+//                    // vertices to resultant sequence
+//                    if (maxCosine < 0.3)
+//                        squares.push_back(approx);
+//                }
+//            }
+//        }
+//    }
+//}
 
 static void findSquaresAlt(const Mat image, vector<vector<Point>>& squares, vector<int> &colorType)
 {
@@ -401,41 +379,41 @@ static void drawSquares(Mat& image, const vector<vector<Point>>& squares)
     }
 }
 
-void SortListSQ(vector<vector<Point>> &sq)
-{
-    if (sq.size() < 2) return;
-    int l = sq[0][1].x - sq[0][0].x + tolerance;
-    int ok = 0;
-    while (ok == 0) // Sort by height
-    {
-        ok = 1;
-        for (int i = 0; i < sq.size() - 1; i++)
-            if (MiddlePoint(sq[i]).y < MiddlePoint(sq[i+1]).y)
-            {
-                vector<Point> temp = sq[i+1];
-                sq[i+1] = sq[i];
-                sq[i] = temp;
-                ok = 0;
-            }
-    }
-
-    ok = 0;
-    while (ok == 0)
-    {
-        ok = 1;
-        for (int i = 0; i < sq.size() - 1; i++)
-            if (abs(MiddlePoint(sq[i]).y - MiddlePoint(sq[i + 1]).y) <= l)
-            {
-                if (MiddlePoint(sq[i]).x > MiddlePoint(sq[i + 1]).x)
-                {
-                    vector<Point> temp = sq[i + 1];
-                    sq[i + 1] = sq[i];
-                    sq[i] = temp;
-                    ok = 0;
-                }
-            }
-    }
-}
+//void SortListSQ(vector<vector<Point>> &sq)
+//{
+//    if (sq.size() < 2) return;
+//    int l = sq[0][1].x - sq[0][0].x + tolerance;
+//    int ok = 0;
+//    while (ok == 0) // Sort by height
+//    {
+//        ok = 1;
+//        for (int i = 0; i < sq.size() - 1; i++)
+//            if (MiddlePoint(sq[i]).y < MiddlePoint(sq[i+1]).y)
+//            {
+//                vector<Point> temp = sq[i+1];
+//                sq[i+1] = sq[i];
+//                sq[i] = temp;
+//                ok = 0;
+//            }
+//    }
+//
+//    ok = 0;
+//    while (ok == 0)
+//    {
+//        ok = 1;
+//        for (int i = 0; i < sq.size() - 1; i++)
+//            if (abs(MiddlePoint(sq[i]).y - MiddlePoint(sq[i + 1]).y) <= l)
+//            {
+//                if (MiddlePoint(sq[i]).x > MiddlePoint(sq[i + 1]).x)
+//                {
+//                    vector<Point> temp = sq[i + 1];
+//                    sq[i + 1] = sq[i];
+//                    sq[i] = temp;
+//                    ok = 0;
+//                }
+//            }
+//    }
+//}
 
 void translateFaceColor(Mat &frame, vector<vector<Point>> square, vector<int> colorType, int (& ma)[3][3])
 {
@@ -471,585 +449,498 @@ void translateFaceColor(Mat &frame, vector<vector<Point>> square, vector<int> co
     }
 }
 
-void identifyFaces(int front, int up, int &left, int &right, int &bottom, int &back)
+void identifyFaces(int (& dir)[6])
 {
-    front = side2color(front);
-    up = side2color(up);
-
-    switch (front)
+    switch (dir[Front])
     {
     case White:
-        back = Yellow;
-        switch (up)
+        dir[Back] = Yellow;
+        switch (dir[Up])
         {
         case Red:
-            left = Green;
-            right = Blue;
-            bottom = Orange;
+            dir[Left] = Green;
+            dir[Right] = Blue;
+            dir[Bottom] = Orange;
             break;
         case Blue:
-            left = Red;
-            right = Orange;
-            bottom = Green;
+            dir[Left] = Red;
+            dir[Right] = Orange;
+            dir[Bottom] = Green;
             break;
         case Orange:
-            left = Blue;
-            right = Green;
-            bottom = Red;
+            dir[Left] = Blue;
+            dir[Right] = Green;
+            dir[Bottom] = Red;
             break;
         case Green:
-            left = Orange;
-            right = Red;
-            bottom = Blue;
+            dir[Left] = Orange;
+            dir[Right] = Red;
+            dir[Bottom] = Blue;
             break;
         }
         break;
 
     case Yellow:
-        back = White;
-        switch (up)
+        dir[Back] = White;
+        switch (dir[Up])
         {
         case Red:
-            left = Blue;
-            right = Green;
-            bottom = Orange;
+            dir[Left] = Blue;
+            dir[Right] = Green;
+            dir[Bottom] = Orange;
             break;
         case Blue:
-            left = Orange;
-            right = Red;
-            bottom = Green;
+            dir[Left] = Orange;
+            dir[Right] = Red;
+            dir[Bottom] = Green;
             break;
         case Orange:
-            left = Green;
-            right = Blue;
-            bottom = Red;
+            dir[Left] = Green;
+            dir[Right] = Blue;
+            dir[Bottom] = Red;
             break;
         case Green:
-            left = Red;
-            right = Orange;
-            bottom = Blue;
+            dir[Left] = Red;
+            dir[Right] = Orange;
+            dir[Bottom] = Blue;
             break;
         }
         break;
 
     case Red:
-        back = Orange;
-        switch (up)
+        dir[Back] = Orange;
+        switch (dir[Up])
         {
         case White:
-            left = Blue;
-            right = Green;
-            bottom = Yellow;
+            dir[Left] = Blue;
+            dir[Right] = Green;
+            dir[Bottom] = Yellow;
             break;
         case Blue:
-            left = Yellow;
-            right = White;
-            bottom = Green;
+            dir[Left] = Yellow;
+            dir[Right] = White;
+            dir[Bottom] = Green;
             break;
         case Yellow:
-            left = Green;
-            right = Blue;
-            bottom = White;
+            dir[Left] = Green;
+            dir[Right] = Blue;
+            dir[Bottom] = White;
             break;
         case Green:
-            left = White;
-            right = Yellow;
-            bottom = Blue;
+            dir[Left] = White;
+            dir[Right] = Yellow;
+            dir[Bottom] = Blue;
             break;
         }
         break;
 
     case Orange:
-        back = Red;
-        switch (up)
+        dir[Back] = Red;
+        switch (dir[Up])
         {
         case White:
-            left = Green;
-            right = Blue;
-            bottom = Yellow;
+            dir[Left] = Green;
+            dir[Right] = Blue;
+            dir[Bottom] = Yellow;
             break;
         case Blue:
-            left = White;
-            right = Yellow;
-            bottom = Green;
+            dir[Left] = White;
+            dir[Right] = Yellow;
+            dir[Bottom] = Green;
             break;
         case Yellow:
-            left = Blue;
-            right = Green;
-            bottom = White;
+            dir[Left] = Blue;
+            dir[Right] = Green;
+            dir[Bottom] = White;
             break;
         case Green:
-            left = Yellow;
-            right = White;
-            bottom = Blue;
+            dir[Left] = Yellow;
+            dir[Right] = White;
+            dir[Bottom] = Blue;
             break;
         }
         break;
 
     case Blue:
-        back = Green;
-        switch (up)
+        dir[Back] = Green;
+        switch (dir[Up])
         {
         case White:
-            left = Orange;
-            right = Red;
-            bottom = Yellow;
+            dir[Left] = Orange;
+            dir[Right] = Red;
+            dir[Bottom] = Yellow;
             break;
         case Red:
-            left = White;
-            right = Yellow;
-            bottom = Orange;
+            dir[Left] = White;
+            dir[Right] = Yellow;
+            dir[Bottom] = Orange;
             break;
         case Yellow:
-            left = Red;
-            right = Orange;
-            bottom = White;
+            dir[Left] = Red;
+            dir[Right] = Orange;
+            dir[Bottom] = White;
             break;
         case Orange:
-            left = Yellow;
-            right = White;
-            bottom = Red;
+            dir[Left] = Yellow;
+            dir[Right] = White;
+            dir[Bottom] = Red;
             break;
         }
         break;
 
     case Green:
-        back = Blue;
-        switch (up)
+        dir[Back] = Blue;
+        switch (dir[Up])
         {
         case White:
-            left = Red;
-            right = Orange;
-            bottom = Yellow;
+            dir[Left] = Red;
+            dir[Right] = Orange;
+            dir[Bottom] = Yellow;
             break;
         case Orange:
-            left = White;
-            right = Yellow;
-            bottom = Red;
+            dir[Left] = White;
+            dir[Right] = Yellow;
+            dir[Bottom] = Red;
             break;
         case Yellow:
-            left = Orange;
-            right = Red;
-            bottom = White;
+            dir[Left] = Orange;
+            dir[Right] = Red;
+            dir[Bottom] = White;
             break;
         case Red:
-            left = Yellow;
-            right = White;
-            bottom = Orange;
+            dir[Left] = Yellow;
+            dir[Right] = White;
+            dir[Bottom] = Orange;
             break;
         }
         break;
     }
-
-    left = color2side(left);
-    right = color2side(right);
-    bottom = color2side(bottom);
-    back = color2side(back);
 }
 
-void faceSwitch(int &ogfront, int &ogup, int front, int up, int(&rc)[6][3][3])
+void rotateMatrix(int(&ma)[3][3], int countRotation, int anticlockwise)
 {
-    int nrc[6][3][3];
-    int left, right, bottom, back;
-    identifyFaces(front, up, left, right, bottom, back);
-
-    int ogleft, ogright, ogbottom, ogback;
-    identifyFaces(ogfront, ogup, ogleft, ogright, ogbottom, ogback);
-
-    int color[6] = { front, up, left, right, bottom, back },
-        ogcolor[6] = { ogfront, ogup, ogleft, ogright, ogbottom, ogback };
-
-    for (int l = 0; l < 6; l++)
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++)
-            {
-                nrc[color[l]][i][j] = rc[ogcolor[l]][i][j];
-            }
-
-    ogfront = front;
-    ogup = up;
-    copyRC(rc, nrc);
-    
-
-}
-
-void faceRotate(int front, int up, int(&rc)[6][3][3], int anticlockwise, char turnType)
-{
-    int left, right, bottom, back;
-    identifyFaces(front, up, left, right, bottom, back);
-
-    int temp[12];
-    switch (turnType)
+    for (int r = 0; r < countRotation; r++)
     {
-    case 'F': // FRONT TURNS
-        // code for rotating a face by 90
-        // first we move the data on front face
-    {
-        int a[3][3];
-        for (int i = 0; i < 3; i++)
-        {
-            for (int j = 0; j < 3; j++)
-                if (anticlockwise) a[j][2 - i] = rc[front][i][j];
-                else a[2 - j][i] = rc[front][i][j];
-        }
+        int a[3][3]; // Make a copy of original and modify the original as accordingly
+        for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) a[i][j] = ma[i][j];
 
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++) rc[front][i][j] = a[i][j];
-
-        if (anticlockwise)
-            for (int i = 0; i < 12; i++)
-            {
-                switch (i / 3)
-                {
-                case 0: // left side
-                    temp[i] = rc[left][2 - i][2];
-                    break;
-                case 1: // up side
-                    temp[i] = rc[up][2][i % 3];
-                    rc[up][2][i % 3] = temp[i - 3];
-                    break;
-                case 2: // right side
-                    temp[i] = rc[right][i % 3][0];
-                    rc[right][i % 3][0] = temp[i - 3];
-                    break;
-                case 3: // down side
-                    temp[i] = rc[bottom][0][2 - i % 3];
-                    rc[bottom][0][2 - i % 3] = temp[i - 3];
-                    rc[left][2 - i % 3][2] = temp[i];
-                    break;
-                }
-            }
-        else
-            for (int i = 0; i < 12; i++)
-            {
-                switch (i / 3)
-                {
-                case 0: // left side
-                    temp[i] = rc[left][i][2];
-                    break;
-                case 1: // bottom side
-                    temp[i] = rc[bottom][0][i % 3];
-                    rc[bottom][0][i % 3] = temp[i - 3];
-                    break;
-                case 2: // right side
-                    temp[i] = rc[right][2 - i % 3][0];
-                    rc[right][2 - i % 3][0] = temp[i - 3];
-                    break;
-                case 3: // up side
-                    temp[i] = rc[up][2][2 - i % 3];
-                    rc[up][2][2 - i % 3] = temp[i - 3];
-                    rc[left][i % 3][2] = temp[i];
-                    break;
-                }
-            }
-    } break;
-    case 'B':
-    {
-        int a[3][3];
-        for (int i = 0; i < 3; i++)
-        {
-            for (int j = 0; j < 3; j++)
-                if (anticlockwise) a[j][2 - i] = rc[back][i][j];
-                else a[2 - j][i] = rc[back][i][j];
-        }
-
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++) rc[back][i][j] = a[i][j];
-
-        if (anticlockwise)
-            for (int i = 0; i < 12; i++)
-            {
-                switch (i / 3)
-                {
-                case 0: // left side
-                    temp[i] = rc[left][2 - i][0];
-                    break;
-                case 1: // up side
-                    temp[i] = rc[up][0][i % 3];
-                    rc[up][0][i % 3] = temp[i - 3];
-                    break;
-                case 2: // right side
-                    temp[i] = rc[right][i % 3][2];
-                    rc[right][i % 3][2] = temp[i - 3];
-                    break;
-                case 3: // down side
-                    temp[i] = rc[bottom][2][2 - i % 3];
-                    rc[bottom][2][2 - i % 3] = temp[i - 3];
-                    rc[left][2 - i % 3][0] = temp[i];
-                    break;
-                }
-            }
-        else
-            for (int i = 0; i < 12; i++)
-            {
-                switch (i / 3)
-                {
-                case 0: // left side
-                    temp[i] = rc[left][i][0];
-                    break;
-                case 1: // bottom side
-                    temp[i] = rc[bottom][2][i % 3];
-                    rc[bottom][2][i % 3] = temp[i - 3];
-                    break;
-                case 2: // right side
-                    temp[i] = rc[right][2 - i % 3][2];
-                    rc[right][2 - i % 3][2] = temp[i - 3];
-                    break;
-                case 3: // up side
-                    temp[i] = rc[up][0][2 - i % 3];
-                    rc[up][0][2 - i % 3] = temp[i - 3];
-                    rc[left][i % 3][0] = temp[i];
-                    break;
-                }
-            }
-    } break;
-    case 'U': // UP TURNS
-    {
-        int a[3][3];
-        for (int i = 0; i < 3; i++)
-        {
-            for (int j = 0; j < 3; j++)
-                if (anticlockwise) a[j][2 - i] = rc[up][i][j];
-                else a[2 - j][i] = rc[up][i][j];
-        }
-
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++) rc[up][i][j] = a[i][j];
-
-        if (anticlockwise)
-            for (int i = 0; i < 12; i++)
-            {
-                switch (i / 3)
-                {
-                case 0: // left side
-                    temp[i] = rc[left][0][i];
-                    break;
-                case 1: // front side
-                    temp[i] = rc[front][0][i % 3];
-                    rc[front][0][i % 3] = temp[i - 3];
-                    break;
-                case 2: // right side
-                    temp[i] = rc[right][0][i % 3];
-                    rc[right][0][i % 3] = temp[i - 3];
-                    break;
-                case 3: // back side
-                    temp[i] = rc[back][0][2 - i % 3];
-                    rc[back][0][2 - i % 3] = temp[i - 3];
-                    rc[left][0][i % 3] = temp[i];
-                    break;
-                }
-            }
-        else
-            for (int i = 0; i < 12; i++)
-            {
-                switch (i / 3)
-                {
-                case 0: // left side
-                    temp[i] = rc[left][0][2 - i];
-                    break;
-                case 1: // back side
-                    temp[i] = rc[back][0][i % 3];
-                    rc[back][0][i % 3] = temp[i - 3];
-                    break;
-                case 2: // right side
-                    temp[i] = rc[right][0][2 - i % 3];
-                    rc[right][0][2 - i % 3] = temp[i - 3];
-                    break;
-                case 3: // front side
-                    temp[i] = rc[front][0][2 - i % 3];
-                    rc[front][0][2 - i % 3] = temp[i - 3];
-                    rc[left][0][i % 3] = temp[i];
-                    break;
-                }
-            }
-    } break;
-    case 'D': // BOTTOM TURNS
-    {
-        int a[3][3];
-        for (int i = 0; i < 3; i++)
-        {
-            for (int j = 0; j < 3; j++)
-                if (anticlockwise) a[j][2 - i] = rc[bottom][i][j];
-                else a[2 - j][i] = rc[bottom][i][j];
-        }
-
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++) rc[bottom][i][j] = a[i][j];
-
-        if (!anticlockwise)
-            for (int i = 0; i < 12; i++)
-            {
-                switch (i / 3)
-                {
-                case 0: // left side
-                    temp[i] = rc[left][2][i];
-                    break;
-                case 1: // front side
-                    temp[i] = rc[front][2][i % 3];
-                    rc[front][2][i % 3] = temp[i - 3];
-                    break;
-                case 2: // right side
-                    temp[i] = rc[right][2][i % 3];
-                    rc[right][2][i % 3] = temp[i - 3];
-                    break;
-                case 3: // back side
-                    temp[i] = rc[back][2][2 - i % 3];
-                    rc[back][2][2 - i % 3] = temp[i - 3];
-                    rc[left][2][i % 3] = temp[i];
-                    break;
-                }
-            }
-        else
-            for (int i = 0; i < 12; i++)
-            {
-                switch (i / 3)
-                {
-                case 0: // left side
-                    temp[i] = rc[left][2][2 - i];
-                    break;
-                case 1: // back side
-                    temp[i] = rc[back][2][i % 3];
-                    rc[back][2][i % 3] = temp[i - 3];
-                    break;
-                case 2: // right side
-                    temp[i] = rc[right][2][2 - i % 3];
-                    rc[right][2][2 - i % 3] = temp[i - 3];
-                    break;
-                case 3: // front side
-                    temp[i] = rc[front][2][2 - i % 3];
-                    rc[front][2][2 - i % 3] = temp[i - 3];
-                    rc[left][2][i % 3] = temp[i];
-                    break;
-                }
-            }
-    } break;
-    case 'R':
-    {
-        int a[3][3];
-        for (int i = 0; i < 3; i++)
-        {
-            for (int j = 0; j < 3; j++)
-                if (anticlockwise) a[j][2 - i] = rc[right][i][j];
-                else a[2 - j][i] = rc[right][i][j];
-        }
-
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++) rc[right][i][j] = a[i][j];
-
-        if (anticlockwise)
-            for (int i = 0; i < 12; i++)
-            {
-                switch (i / 3)
-                {
-                case 0: // front side
-                    temp[i] = rc[front][2 - i][2];
-                    break;
-                case 1: // up side
-                    temp[i] = rc[up][2 - i % 3][2];
-                    rc[up][2 - i % 3][2] = temp[i - 3];
-                    break;
-                case 2: // back side
-                    temp[i] = rc[back][i % 3][2];
-                    rc[back][i % 3][2] = temp[i - 3];
-                    break;
-                case 3: // bottom side
-                    temp[i] = rc[bottom][i % 3][2];
-                    rc[bottom][i % 3][2] = temp[i - 3];
-                    rc[front][2 - i % 3][2] = temp[i];
-                    break;
-                }
-            }
-        else
-            for (int i = 0; i < 12; i++)
-            {
-                switch (i / 3)
-                {
-                case 0: // front side
-                    temp[i] = rc[front][i][2];
-                    break;
-                case 1: // down side
-                    temp[i] = rc[bottom][i % 3][2];
-                    rc[bottom][i % 3][2] = temp[i - 3];
-                    break;
-                case 2: // back side
-                    temp[i] = rc[back][2 - i % 3][2];
-                    rc[back][2 - i % 3][2] = temp[i - 3];
-                    break;
-                case 3: // up side
-                    temp[i] = rc[up][2 - i % 3][2];
-                    rc[up][2 - i % 3][2] = temp[i - 3];
-                    rc[front][i % 3][2] = temp[i];
-                    break;
-                }
-            }
-    } break;
-    case 'L':
-    {
-        int a[3][3];
-        for (int i = 0; i < 3; i++)
-        {
-            for (int j = 0; j < 3; j++)
-                if (anticlockwise) a[j][2 - i] = rc[left][i][j];
-                else a[2 - j][i] = rc[left][i][j];
-        }
-
-        for (int i = 0; i < 3; i++)
-            for (int j = 0; j < 3; j++) rc[left][i][j] = a[i][j];
-
-        if (!anticlockwise)
-            for (int i = 0; i < 12; i++)
-            {
-                switch (i / 3)
-                {
-                case 0: // front side
-                    temp[i] = rc[front][2 - i][0];
-                    break;
-                case 1: // up side
-                    temp[i] = rc[up][2 - i % 3][0];
-                    rc[up][2 - i % 3][0] = temp[i - 3];
-                    break;
-                case 2: // back side
-                    temp[i] = rc[back][i % 3][0];
-                    rc[back][i % 3][0] = temp[i - 3];
-                    break;
-                case 3: // up side
-                    temp[i] = rc[bottom][i % 3][0];
-                    rc[bottom][i % 3][0] = temp[i - 3];
-                    rc[front][2 - i % 3][0] = temp[i];
-                    break;
-                }
-            }
-        else
-            for (int i = 0; i < 12; i++)
-            {
-                switch (i / 3)
-                {
-                case 0: // front side
-                    temp[i] = rc[front][i][0];
-                    break;
-                case 1: // down side
-                    temp[i] = rc[bottom][i % 3][0];
-                    rc[bottom][i % 3][0] = temp[i - 3];
-                    break;
-                case 2: // back side
-                    temp[i] = rc[back][2 - i % 3][0];
-                    rc[back][2 - i % 3][0] = temp[i - 3];
-                    break;
-                case 3: // up side
-                    temp[i] = rc[up][2 - i % 3][0];
-                    rc[up][2 - i % 3][0] = temp[i - 3];
-                    rc[front][i % 3][0] = temp[i];
-                    break;
-                }
-            }
-    } break;
+        for (int y = 0; y < 3; y++)
+            for (int x = 0; x < 3; x++)
+                ma[y][x] = anticlockwise ? a[2 - x][y] : a[x][2 - y];
     }
 }
 
-void actionRubik(int front, int up, int(&rc)[6][3][3], char action)
+void mirrorMatrix(int(&ma)[3][3])
 {
-    int left, right, bottom, back;
-    identifyFaces(front, up, left, right, bottom, back);
+    int a[3][3]; // Make a copy of original and modify the original as accordingly
+    for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++) a[i][j] = ma[i][j];
+
+    for (int y = 0; y < 3; y++)
+        for (int x = 0; x > 0; x++) ma[y][x] = a[y][2 - x];
+}
+
+void rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool undo)
+{
+    int dirWhite = 0;
+    while (dir[dirWhite] != White) dirWhite++;
+
+    int dirBlue = 0;
+    while (dir[dirBlue] != Blue) dirBlue++;
+
+    switch (dirWhite)
+    {
+    case Front:
+        switch (dirBlue)
+        {
+        case Up:
+            rotateMatrix(rc[dir[Back]], 2, undo);
+            break;
+        case Bottom:
+            rotateMatrix(rc[dir[Left]], 2, undo);
+            rotateMatrix(rc[dir[Right]], 2, undo);
+            rotateMatrix(rc[dir[Up]], 2, undo);
+            rotateMatrix(rc[dir[Bottom]], 2, undo);
+
+            rotateMatrix(rc[dir[Front]], 2, undo);
+            break;
+        case Right:
+            rotateMatrix(rc[dir[Left]], 2, !undo);
+            rotateMatrix(rc[dir[Right]], 2, !undo);
+            rotateMatrix(rc[dir[Up]], 2, !undo);
+            rotateMatrix(rc[dir[Bottom]], 2, !undo);
+
+            rotateMatrix(rc[dir[Front]], 2, undo);
+            rotateMatrix(rc[dir[Back]], 2, undo);
+        case Left:
+            rotateMatrix(rc[dir[Left]], 1, undo);
+            rotateMatrix(rc[dir[Right]], 1, undo);
+            rotateMatrix(rc[dir[Up]], 1, undo);
+            rotateMatrix(rc[dir[Bottom]], 1, undo);
+
+            rotateMatrix(rc[dir[Front]], 1, undo);
+            rotateMatrix(rc[dir[Back]], 1, undo);
+            break;
+        }
+        break;
+
+    case Back:
+        switch (dirBlue)
+        {
+        case Up:
+            rotateMatrix(rc[dir[Up]], 2, !undo);
+            rotateMatrix(rc[dir[Bottom]], 2, !undo);
+            
+            rotateMatrix(rc[dir[Front]], 2, !undo);
+            break;
+        case Bottom:
+            rotateMatrix(rc[dir[Left]], 2, undo);
+            rotateMatrix(rc[dir[Right]], 2, undo);
+
+            rotateMatrix(rc[dir[Back]], 2, undo);
+            break;
+        case Right:
+            rotateMatrix(rc[dir[Left]], 2, undo);
+            rotateMatrix(rc[dir[Right]], 2, undo);
+            rotateMatrix(rc[dir[Up]], 2, undo);
+            rotateMatrix(rc[dir[Bottom]], 2, undo);
+
+            rotateMatrix(rc[dir[Front]], 2, undo);
+            rotateMatrix(rc[dir[Back]], 2, undo);
+        case Left:
+            rotateMatrix(rc[dir[Left]], 1, !undo);
+            rotateMatrix(rc[dir[Right]], 1, !undo);
+            rotateMatrix(rc[dir[Up]], 1, undo);
+            rotateMatrix(rc[dir[Bottom]], 1, undo);
+
+            rotateMatrix(rc[dir[Front]], 1, !undo);
+            rotateMatrix(rc[dir[Back]], 1, !undo);
+            break;
+        }
+        break;
+
+    case Left:
+        switch (dirBlue)
+        {
+        case Up:
+            rotateMatrix(rc[dir[Up]], 1, !undo);
+            rotateMatrix(rc[dir[Bottom]], 1, undo);
+            rotateMatrix(rc[dir[Right]], 2, undo);
+            //rotateMatrix(rc[dir[Front]], 2, undo);
+            break;
+        case Bottom:
+            rotateMatrix(rc[dir[Up]], 1, undo);
+            rotateMatrix(rc[dir[Bottom]], 1, !undo);
+            rotateMatrix(rc[dir[Front]], 2, undo);
+            rotateMatrix(rc[dir[Back]], 2, undo);
+
+            rotateMatrix(rc[dir[Left]], 2, undo);
+            //rotateMatrix(rc[dir[Right]], 2, undo);
+            break;
+        case Front:
+            rotateMatrix(rc[dir[Up]], 2, undo);
+            rotateMatrix(rc[dir[Front]], 1, !undo);
+            rotateMatrix(rc[dir[Back]], 1, !undo);
+
+            rotateMatrix(rc[dir[Left]], 1, undo);
+            rotateMatrix(rc[dir[Right]], 1, !undo);
+            break;
+        case Back:
+            rotateMatrix(rc[dir[Front]], 1, undo);
+            rotateMatrix(rc[dir[Bottom]], 2, undo);
+            rotateMatrix(rc[dir[Back]], 1, undo);
+
+            rotateMatrix(rc[dir[Left]], 1, undo);
+            rotateMatrix(rc[dir[Right]], 1, undo);
+            break;
+        }
+        break;
+
+    case Right:
+        switch (dirBlue)
+        {
+        case Up:
+            rotateMatrix(rc[dir[Up]], 1, undo);
+            rotateMatrix(rc[dir[Bottom]], 1, !undo);
+
+            rotateMatrix(rc[dir[Left]], 2, undo);
+            break;
+        case Bottom:
+            rotateMatrix(rc[dir[Up]], 1, !undo);
+            rotateMatrix(rc[dir[Bottom]], 1, undo);
+            rotateMatrix(rc[dir[Front]], 2, undo);
+            rotateMatrix(rc[dir[Back]], 2, undo);
+
+            //rotateMatrix(rc[dir[Left]], 2, undo);
+            rotateMatrix(rc[dir[Right]], 2, undo);
+            break;
+        case Front:
+            rotateMatrix(rc[dir[Up]], 2, undo);
+            rotateMatrix(rc[dir[Front]], 1, undo);
+            rotateMatrix(rc[dir[Back]], 1, undo);
+
+            rotateMatrix(rc[dir[Left]], 1, undo);
+            rotateMatrix(rc[dir[Right]], 1, undo);
+            break;
+        case Back:
+            rotateMatrix(rc[dir[Front]], 1, !undo);
+            rotateMatrix(rc[dir[Bottom]], 2, undo);
+            rotateMatrix(rc[dir[Back]], 1, !undo);
+
+            rotateMatrix(rc[dir[Left]], 1, !undo);
+            rotateMatrix(rc[dir[Right]], 1, !undo);
+            break;
+        }
+        break;
+        
+    case Up:
+        switch (dirBlue)
+        {
+        case Front:
+            rotateMatrix(rc[dir[Right]], 1, undo);
+            rotateMatrix(rc[dir[Left]], 1, !undo);
+            rotateMatrix(rc[dir[Front]], 2, undo);
+
+            rotateMatrix(rc[dir[Up]], 2, undo);
+            rotateMatrix(rc[dir[Bottom]], 2, undo);
+            break;
+        case Back:
+            rotateMatrix(rc[dir[Right]], 1, !undo);
+            rotateMatrix(rc[dir[Left]], 1, undo);
+            rotateMatrix(rc[dir[Back]], 2, undo);
+            break;
+        case Right:
+            rotateMatrix(rc[dir[Right]], 2, undo);
+            rotateMatrix(rc[dir[Front]], 1, !undo);
+            rotateMatrix(rc[dir[Back]], 1, undo);
+
+            rotateMatrix(rc[dir[Up]], 1, !undo);
+            rotateMatrix(rc[dir[Bottom]], 1, undo);
+            break;
+
+        case Left:
+            rotateMatrix(rc[dir[Left]], 2, !undo);
+            rotateMatrix(rc[dir[Front]], 1, undo);
+            rotateMatrix(rc[dir[Back]], 1, !undo);
+
+            rotateMatrix(rc[dir[Up]], 1, undo);
+            rotateMatrix(rc[dir[Bottom]], 1, !undo);
+            break;
+        }
+        break;
+
+    case Bottom:
+        switch (dirBlue)
+        {
+        case Front:
+            rotateMatrix(rc[dir[Right]], 1, undo);
+            rotateMatrix(rc[dir[Left]], 1, !undo);
+            rotateMatrix(rc[dir[Back]], 2, undo);
+
+            //rotateMatrix(rc[dir[Up]], 2, undo);
+            //rotateMatrix(rc[dir[Bottom]], 2, undo);
+            break;
+        case Back:
+            rotateMatrix(rc[dir[Right]], 1, !undo);
+            rotateMatrix(rc[dir[Left]], 1, undo);
+
+            rotateMatrix(rc[dir[Up]], 2, undo);
+            rotateMatrix(rc[dir[Bottom]], 2, undo);
+            break;
+        case Right:
+            //rotateMatrix(rc[dir[Right]], 2, undo);
+            rotateMatrix(rc[dir[Left]], 2, undo);
+            rotateMatrix(rc[dir[Front]], 1, !undo);
+            rotateMatrix(rc[dir[Back]], 1, undo);
+
+            rotateMatrix(rc[dir[Up]], 1, undo);
+            rotateMatrix(rc[dir[Bottom]], 1, !undo);
+            break;
+
+        case Left:
+            rotateMatrix(rc[dir[Right]], 2, undo);
+            //rotateMatrix(rc[dir[Left]], 2, undo);
+            rotateMatrix(rc[dir[Front]], 1, undo);
+            rotateMatrix(rc[dir[Back]], 1, !undo);
+
+            rotateMatrix(rc[dir[Up]], 1, !undo);
+            rotateMatrix(rc[dir[Bottom]], 1, undo);
+            break;
+        }
+        break;
+    }
+}
+
+void faceRotate(int face, int(&rc)[6][3][3], int anticlockwise)
+{
+    int tempDir[6]; 
+    tempDir[0] = face;
+
+    if (face == White || face == Yellow)
+        tempDir[1] = Blue;
+    else
+        tempDir[1] = White; 
+
+    identifyFaces(tempDir);
+
+    rotateFaceToMatchOrientation(tempDir, rc, 0);
+
+    int temp[12];
+    rotateMatrix(rc[tempDir[0]], 1, anticlockwise);
+        
+    if (anticlockwise)
+        for (int i = 0; i < 12; i++)
+        {
+            switch (i / 3)
+            {
+            case 0: // left side
+                temp[i] = rc[tempDir[Left]][2 - i][2];
+                break;
+            case 1: // up side
+                temp[i] = rc[tempDir[Up]][2][i % 3];
+                rc[tempDir[Up]][2][i % 3] = temp[i - 3];
+                break;
+            case 2: // right side
+                temp[i] = rc[tempDir[Right]][i % 3][0];
+                rc[tempDir[Right]][i % 3][0] = temp[i - 3];
+                break;
+            case 3: // down side
+                temp[i] = rc[tempDir[Bottom]][0][2 - i % 3];
+                rc[tempDir[Bottom]][0][2 - i % 3] = temp[i - 3];
+                rc[tempDir[Left]][2 - i % 3][2] = temp[i];
+                break;
+            }
+        }
+    else
+        for (int i = 0; i < 12; i++)
+        {
+            switch (i / 3)
+            {
+            case 0: // left side
+                temp[i] = rc[tempDir[Left]][i][2];
+                break;
+            case 1: // bottom side
+                temp[i] = rc[tempDir[Bottom]][0][i % 3];
+                rc[tempDir[Bottom]][0][i % 3] = temp[i - 3];
+                break;
+            case 2: // right side
+                temp[i] = rc[tempDir[Right]][2 - i % 3][0];
+                rc[tempDir[Right]][2 - i % 3][0] = temp[i - 3];
+                break;
+            case 3: // up side
+                temp[i] = rc[tempDir[Up]][2][2 - i % 3];
+                rc[tempDir[Up]][2][2 - i % 3] = temp[i - 3];
+                rc[tempDir[Left]][i % 3][2] = temp[i];
+                break;
+            }
+        }
+
+    rotateFaceToMatchOrientation(tempDir, rc, 1);
+}
+
+void actionRubik(int(&dir)[6], int(&rc)[6][3][3], char action, bool prime)
+{
+    mirrorMatrix(rc[dir[Back]]);
+    rotateFaceToMatchOrientation(dir, rc, 1);
 
     switch (action)
     {
@@ -1058,69 +949,49 @@ void actionRubik(int front, int up, int(&rc)[6][3][3], char action)
         break;
     
         // normal moveset
-    case 'U':
-        faceRotate(front, up, rc, 0, 'U');
-        break;
-    case 'D':
-        faceRotate(front, up, rc, 0, 'D');
-        break;
-    case 'L':
-        faceRotate(front, up, rc, 0, 'L');
-        break;
-    case 'R':
-        faceRotate(front, up, rc, 0, 'R');
-        break;
-    case 'F':
-        faceRotate(front, up, rc, 0, 'F');
-        break;
-    case 'B':
-        faceRotate(front, up, rc, 0, 'B');
-        break;
-        
-        // inversed (normal) moveset (formally known as the ones with prime)
-    case 'u':
-        faceRotate(front, up, rc, 1, 'U');
-        break;
-    case 'd':
-        faceRotate(front, up, rc, 1, 'D');
-        break;
-    case 'l':
-        faceRotate(front, up, rc, 1, 'L');
-        break;
-    case 'r':
-        faceRotate(front, up, rc, 1, 'R');
-        break;
-    case 'f':
-        faceRotate(front, up, rc, 1, 'F');
-        break;
-    case 'b':
-        faceRotate(front, up, rc, 1, 'B');
-        break;
+    case 'U': faceRotate(dir[Up], rc, !prime); break;
+    case 'D': faceRotate(dir[Bottom], rc, !prime); break;
+
+    case 'L': faceRotate(dir[Left], rc, !prime); break;
+    case 'R': faceRotate(dir[Right], rc, !prime); break;
+
+    case 'F': faceRotate(dir[Front], rc, !prime); break;
+    case 'B': faceRotate(dir[Back], rc, !prime); break;
 
         // cube rotations (not to be confused with substited letters for prime moves)
     case 'x': // rotate the front face to up face
-        faceSwitch(front, up, up, back, rc);
+        dir[Front] = dir[Up];
+        dir[Up] = dir[Back];
+        identifyFaces(dir);
+
         break;
     case 'y': // rotate the right face to front face
-        faceSwitch(front, up, left, up, rc);
+        dir[Front] = dir[Right];
+        dir[Up] = dir[Up];
+        identifyFaces(dir);
+
         break;
     case 'z': // rotate the up face to right face
-        faceSwitch(front, up, front, right, rc);
+        dir[Front] = dir[Front];
+        dir[Up] = dir[Right];
+        identifyFaces(dir);
+
         break;
     }
+
+    rotateFaceToMatchOrientation(dir, rc, 0);
+    mirrorMatrix(rc[dir[Back]]);
+
 }
 
-void ReadRubik(int front, int up, int rc[6][3][3])
+void ReadRubik(int (& dir)[6], int rc[6][3][3])
 {
-    int left, right, bottom, back;
-    identifyFaces(front, up, left, right, bottom, back);
-
     // up face
     for (int y = 0; y < 3; y++)
     {
         cout << "      ";
         for (int x = 0; x < 3; x++)
-            cout << intTocharColorType(rc[up][y][x]) << " ";
+            cout << intTocharColorType(rc[dir[Up]][y][x]) << " ";
         cout << endl;
     }
 
@@ -1133,13 +1004,13 @@ void ReadRubik(int front, int up, int rc[6][3][3])
             switch (x / 3)
             {
             case 0:
-                i = left;
+                i = dir[Left];
                 break;
             case 1:
-                i = front;
+                i = dir[Front];
                 break;
             case 2:
-                i = right;
+                i = dir[Right];
                 break;
             }
 
@@ -1153,7 +1024,7 @@ void ReadRubik(int front, int up, int rc[6][3][3])
     {
         cout << "      ";
         for (int x = 0; x < 3; x++)
-            cout << intTocharColorType(rc[bottom][y][x]) << " ";
+            cout << intTocharColorType(rc[dir[Bottom]][y][x]) << " ";
         cout << endl;
     }
 
@@ -1163,8 +1034,430 @@ void ReadRubik(int front, int up, int rc[6][3][3])
     {
         cout << "      ";
         for (int x = 0; x < 3; x++)
-            cout << intTocharColorType(rc[back][y][x]) << " ";
+            cout << intTocharColorType(rc[dir[Back]][y][x]) << " ";
         cout << endl;
+    }
+}
+
+enum Stage
+{
+    FirstLayer = 0,
+    SecondLayer = 1,
+    ThirdLayer = 2
+};
+
+enum Step
+{
+    Flower = 0,
+    FirstLayerPlus = 1,
+    FirstLayerCorner = 2,
+
+    SecondLayerEdge = 3,
+
+    ThirdLayerPlus = 4,
+    ThirdLayerFace = 5,
+    ThirdLayerCorner = 6,
+    ThirdLayerEdge = 7
+
+};
+
+void queueMove(int (& dir)[6], int (&rc)[6][3][3], char move[])
+{
+    int nrc[6][3][3];
+    //string debugLog = "";
+
+    char oldMove;
+
+    for (int i = 0; i < strlen(move); i++)
+    {
+        // This might be a bit confusing so lets break it down first [insert_dance_emoji]
+        // This is a small side dish of code to interpreting what kind of moves
+        // We already have the move we want to execute,
+        // we just need to know if its a prime one or a double move or a simple move.
+        if (move[i] == ' ' || move[i] == 'NULL') continue;
+
+        if (move[i] == 39)
+        {
+            actionRubik(dir, rc, oldMove, 1);
+            actionRubik(dir, rc, oldMove, 1);
+        }
+        else if (move[i] == '2')
+        {
+            actionRubik(dir, rc, oldMove, 0);
+        }
+        else
+        {
+            actionRubik(dir, rc, move[i], 0);
+        }
+
+        oldMove = move[i];
+    }
+}
+void SolveRubik(int(&dir)[6], int(&rc)[6][3][3], int showcaseLevel)
+{
+    int LayerStatus = 0,
+        StepStatus = 0;
+    bool issue = false;
+
+    // Flower
+    bool done = false;
+    int mainColor = rc[dir[Front]][1][1];
+
+    if (mainColor == rc[dir[Back]][0][1] &&
+        mainColor == rc[dir[Back]][1][0] &&
+        mainColor == rc[dir[Back]][1][2] &&
+        mainColor == rc[dir[Back]][2][1]) done = true;
+
+    while (!done && !issue)
+    {
+        int c, dirDes;
+        int matchingSetup = 0;
+        for (int l : {Front, Back, Up, Bottom, Left, Right})
+        {
+            char q[256] = "";
+            if (mainColor == rc[dir[l]][0][1])
+            {
+                switch (l)
+                {
+                case Front:
+                    c = rc[Up][2][1];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "U2"); break;
+                    case Bottom:    strcpy(q, "F2 D2"); break;
+                    case Right:     strcpy(q, "F R2"); break;
+                    case Left:      strcpy(q, "F' L2"); break;
+                    }
+                    break;
+
+                case Back:
+                    c = rc[Up][0][1];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, ""); break;
+                    case Bottom:    strcpy(q, "U2 F2 D2"); break;
+                    case Right:     strcpy(q, "U2 F R2"); break;
+                    case Left:      strcpy(q, "U2 F' L2"); break;
+                    }
+
+                case Up:
+                    c = rc[Back][0][1];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "U B' R B"); break;
+                    case Bottom:    strcpy(q, "U B R B'"); break;
+                    case Right:     strcpy(q, "U R"); break;
+                    case Left:      strcpy(q, "U' L'"); break;
+                    }
+                    break;
+
+                case Bottom:
+                    c = rc[Front][2][1];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "B2 D' B' L B'"); break;
+                    case Bottom:    strcpy(q, "D B R' B'"); break;
+                    case Right:     strcpy(q, "B' D B R'"); break;
+                    case Left:      strcpy(q, "B D' B' L"); break;
+                    }
+                    break;
+
+                case Right:
+                    c = rc[Up][1][2];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "U'"); break;
+                    case Bottom:    strcpy(q, "B R B'"); break;
+                    case Right:     strcpy(q, "B U F B' R2"); break;
+                    case Left:      strcpy(q, "B' U F' B L2"); break;
+                    }
+                    break;
+
+                case Left:
+                    c = rc[Up][1][0];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "U"); break;
+                    case Bottom:    strcpy(q, "B' L' B"); break;
+                    case Right:     strcpy(q, "B U' F B' R2"); break;
+                    case Left:      strcpy(q, "B' U' F' B L2"); break;
+                    }
+                    break;
+                }
+            }
+            if (mainColor == rc[dir[l]][2][1])
+            {
+                switch (l)
+                {
+                case Front:
+                    c = rc[Bottom][0][1];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "F2 U2"); break;
+                    case Bottom:    strcpy(q, "D2"); break;
+                    case Right:     strcpy(q, "B' D2 B"); break;
+                    case Left:      strcpy(q, "B D2 B'"); break;
+                    }
+                    break;
+
+                case Back:
+                    c = rc[Bottom][2][1];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "D2 F2 U2"); break;
+                    case Bottom:    strcpy(q, ""); break;
+                    case Right:     strcpy(q, "D2 F' R2"); break;
+                    case Left:      strcpy(q, "D2 F L2"); break;
+                    }
+
+                case Up:
+                    c = rc[Front][0][1];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "F B' R B U' "); break;
+                    case Bottom:    strcpy(q, "F B R' B' D"); break;
+                    case Right:     strcpy(q, "B U' B' R"); break;
+                    case Left:      strcpy(q, "B' U B L'"); break;
+                    }
+                    break;
+
+                case Bottom:
+                    c = rc[Back][2][1];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "D B L B'"); break;
+                    case Bottom:    strcpy(q, "D B' L B"); break;
+                    case Right:     strcpy(q, "D' R'"); break;
+                    case Left:      strcpy(q, "D L"); break;
+                    }
+                    break;
+
+                case Right:
+                    c = rc[Bottom][1][2];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "B2 D B2"); break;
+                    case Bottom:    strcpy(q, "D"); break;
+                    case Right:     strcpy(q, "B' D' F' B R2"); break;
+                    case Left:      strcpy(q, "B D' F B' L2"); break;
+                    }
+                    break;
+
+                case Left:
+                    c = rc[Bottom][1][0];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "B2 D F2 B2 U2 "); break;
+                    case Bottom:    strcpy(q, "D'"); break;
+                    case Right:     strcpy(q, "B' D F' B R2"); break;
+                    case Left:      strcpy(q, "B D F B' L2"); break;
+                    }
+                    break;
+                }
+
+            }
+            if (mainColor == rc[dir[l]][1][0])
+            {
+                switch (l)
+                {
+                case Front:
+                    c = rc[Left][1][2];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "F U2"); break;
+                    case Bottom:    strcpy(q, "F' D2"); break;
+                    case Right:     strcpy(q, "F2 R2"); break;
+                    case Left:      strcpy(q, "L2"); break;
+                    }
+                    break;
+
+                case Back:
+                    c = rc[Right][1][2];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "R2 F' U2"); break;
+                    case Bottom:    strcpy(q, "R2 F D2"); break;
+                    case Right:     strcpy(q, ""); break;
+                    case Left:      strcpy(q, "R2 F2 L2"); break;
+                    }
+
+                case Up:
+                    c = rc[Left][0][1];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "B L' B'"); break;
+                    case Bottom:    strcpy(q, "B' L' B"); break;
+                    case Right:     strcpy(q, "B2 L' B2"); break;
+                    case Left:      strcpy(q, "L'"); break;
+                    }
+                    break;
+
+                case Bottom:
+                    c = rc[Front][2][1];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "B L B'"); break;
+                    case Bottom:    strcpy(q, "B' L B"); break;
+                    case Right:     strcpy(q, "B2 L B2"); break;
+                    case Left:      strcpy(q, "L"); break;
+                    }
+                    break;
+
+                case Right:
+                    c = rc[Front][1][2];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "B' R B U'"); break;
+                    case Bottom:    strcpy(q, "B R' B' D"); break;
+                    case Right:     strcpy(q, "F B' D B R'"); break;
+                    case Left:      strcpy(q, "F B D' B' L"); break;
+                    }
+                    break;
+
+                case Left:
+                    c = rc[Back][1][2];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "L U"); break;
+                    case Bottom:    strcpy(q, "L' D'"); break;
+                    case Right:     strcpy(q, "L B U B'"); break;
+                    case Left:      strcpy(q, "L B' U B"); break;
+                    }
+                    break;
+                }
+
+            }
+            if (mainColor == rc[dir[l]][1][2])
+            {
+                switch (l)
+                {
+                case Front:
+                    c = rc[Right][1][0];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "F' U2"); break;
+                    case Bottom:    strcpy(q, "F D2"); break;
+                    case Right:     strcpy(q, "R2"); break;
+                    case Left:      strcpy(q, "F2 L2"); break;
+                    }
+                    break;
+
+                case Back:
+                    c = rc[Left][1][0];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "L2 F U2"); break;
+                    case Bottom:    strcpy(q, "L2 F' D2"); break;
+                    case Right:     strcpy(q, "L2 F2 R2"); break;
+                    case Left:      strcpy(q, ""); break;
+                    }
+
+                case Up:
+                    c = rc[Right][0][1];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "B' R B "); break;
+                    case Bottom:    strcpy(q, "B R B'"); break;
+                    case Right:     strcpy(q, "R"); break;
+                    case Left:      strcpy(q, "B2 R B2"); break;
+                    }
+                    break;
+
+                case Bottom:
+                    c = rc[Right][2][1];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "B' R' B"); break;
+                    case Bottom:    strcpy(q, "B R' B'"); break;
+                    case Right:     strcpy(q, "R'"); break;
+                    case Left:      strcpy(q, "B2 R' B2"); break;
+                    }
+                    break;
+
+                case Right:
+                    c = rc[Back][1][0];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "R' U'"); break;
+                    case Bottom:    strcpy(q, "R D"); break;
+                    case Right:     strcpy(q, "R' B U' B'"); break;
+                    case Left:      strcpy(q, "R' B' U' B"); break;
+                    }
+                    break;
+
+                case Left:
+                    c = rc[Front][1][0];
+                    dirDes = 0;
+                    while (dir[dirDes] != c) dirDes++;
+                    switch (dirDes)
+                    {
+                    case Up:        strcpy(q, "L U L'"); break;
+                    case Bottom:    strcpy(q, "L' D' L"); break;
+                    case Right:     strcpy(q, "L' B U B' L"); break;
+                    case Left:      strcpy(q, "L' B' U B"); break;
+                    }
+                    break;
+                }
+
+            }
+            queueMove(dir, rc, q);
+        }
+        if (mainColor == rc[dir[Back]][0][1] &&
+            mainColor == rc[dir[Back]][1][0] &&
+            mainColor == rc[dir[Back]][1][2] &&
+            mainColor == rc[dir[Back]][2][1]) done = true;
+
+        if (!matchingSetup && !done)
+        {
+            issue = true;
+            break;
+        }
     }
 }
 
@@ -1179,9 +1472,11 @@ int main()
     }
 
     Mat frame; bool ok = 1;
-    int rc[6][3][3]; int nr = 0, front = 0, up = 1, left, right, bottom, back;
-    int SquareCheck = 1, ColorCheck = 1, RubikGame = 1;
-    while (ok)
+    int rc[6][3][3]; 
+    int nr = 0, dir[6] = {0, 1, 2, 3, 4, 5};
+    int SquareCheck = 1, ColorCheck = 1, RubikGame = 1, FileInputOverride = 1;
+    
+    while (ok && !FileInputOverride)
     {
         cam >> frame;
         if (frame.empty()) // Check if the frame is empty
@@ -1237,30 +1532,27 @@ int main()
 
             switch (nr)
             {
-            case 0: // front
-                cout << "f: White / u: Orange";
+            case 0: // frontFace
+                cout << "f: White / u: Blue";
                 break;
-            case 1: // up
-                cout << "f: Orange / u: Yellow";
+            case 1: // upFace
+                cout << "f: Blue / u: Yellow";
                 break;
-            case 2: // bottom
-                cout << "f: Red / u: White";
+            case 2: // backFace
+                cout << "f: Yellow / u: Blue";
                 break;
-            case 3: // right
-                cout << "f: Green / u: Orange";
+            case 3: // leftFace
+                cout << "f: Red / u: Blue";
                 break;
-            case 4: // left
-                cout << "f: Blue / u: Orange";
+            case 4: // rightFace
+                cout << "f: Orange / u: Blue";
                 break;
-            case 5: //back
-                cout << "f: Yellow / u: Orange";
+            case 5: // bottomFace
+                cout << "f: Green / u: White";
                 break;
             case 6:
-                cout << "You're done!";
-                front = color2side(White);
-                up = color2side(Orange);
-
                 ok = 0;
+                cout << "Creating an image of rubik cube 2D..." << endl;
                 break;
             }
 
@@ -1272,31 +1564,128 @@ int main()
         if (waitKey(300) == 'q') ok = 0; // Stop the program 
     }
 
-    cam.release();
-    destroyAllWindows();
+    if(!FileInputOverride)
+    {
+        cam.release();
+        destroyAllWindows();
+    }
+    
+    if (FileInputOverride)
+    {
+        ifstream fin("RubikCube.txt");
+        int z;
+        for (int l = 0; l < 6; l++)
+            for (int y = 0; y < 3; y++)
+                for (int x = 0; x < 3; x++)
+                {
+                    fin >> z;
+                    rc[l][y][x] = z;
+                }
 
+        fin.close();
+    }
+
+    string NameOutput = (string)"RubikSession" + (string)".txt";
+    ofstream fout(NameOutput);
+
+    int nrc[6][3][3];
+    string debugLog = "";
     if (RubikGame)
     {
-        ReadRubik(front, up, rc);
+        copyRC(nrc, rc);
+        rotateFaceToMatchOrientation(dir, rc, 0);
+        ReadRubik(dir, rc);
     }
 
-    int nrc[6][3][3]; copyRC(nrc, rc);
+    char oldMove;
+
     while (RubikGame)
     {
+        int tempDir[6] = { 0, 1, 2 , 3, 4, 5 };
         char move;
-        cout << "Your move... ";
+        cout << endl << "Your move... ";
         cin >> move;
 
-        if (move == '0') RubikGame = 0;
-        if (move == '/')
-        {
-            copyRC(rc, nrc);
-            cout << "Copied!" << endl;
-        }
+            switch (move)
+            {
+            case '0': // Stop the Game
+                RubikGame = 0;
+                break;
 
-        actionRubik(front, up, rc, move);
-        cout << endl;
-        ReadRubik(front, up, rc);
+            case '-': // Reset the Game
+                copyRC(rc, nrc);
+                for (int i = 0; i < 6; i++) dir[i] = i;
+                rotateFaceToMatchOrientation(dir, rc, 0);
+                debugLog = "";
+                cout << "The game has been reset!" << endl;
+
+                cout << endl;
+                ReadRubik(dir, rc);
+                break;
+
+            case '+': // Save moves onto a file
+                fout << debugLog;
+                break;
+
+            case ']':
+                cout << "F U B L R B" << endl;
+                for (int i = 0; i < 6; i++)
+                    cout << intTocharColorType(dir[i]) << " ";
+                cout << endl;
+                break;
+
+            case '[': // Show White Front / Blue Up Cube
+            
+                cout << "Showing cube with White Front n' Blue Up..." << endl;
+                rotateFaceToMatchOrientation(dir, rc, 1);
+
+                rotateFaceToMatchOrientation(tempDir, rc, 0);
+                ReadRubik(tempDir, rc);
+                rotateFaceToMatchOrientation(tempDir, rc, 1);
+                cout << endl;
+                break;
+
+            case '1': // Solve the Rubik Cube algorithmically and spit out a line of RC notations as a solution
+                cout << "Solving the cube..." << endl;
+                // 0 - Only the final result
+                // 1 - Every layer completion (First Layer, Second Layer, Third layer)
+                // 2 - Every step completion
+                // 3 - Every move (Not recommended)
+                SolveRubik(dir, rc, 1);
+                cout << endl;
+                ReadRubik(dir, rc);
+                cout << endl;
+                break;
+
+            default:
+                // This might be a bit confusing so lets break it down first [insert_dance_emoji]
+                // This is a small side dish of code to interpreting what kind of moves
+                // We already have the move we want to execute,
+                // we just need to know if its a prime one or a double move or a simple move.
+                if (move == ' ' || move == 'NULL') continue;
+
+                if (move == 39)
+                {
+                    actionRubik(dir, rc, oldMove, 1);
+                    actionRubik(dir, rc, oldMove, 1);
+                }
+                else if (move == '2')
+                {
+                    actionRubik(dir, rc, oldMove, 0);
+                }
+                else
+                {
+                    actionRubik(dir, rc, move, 0);
+                }
+
+                oldMove = move;
+
+                cout << endl;
+                ReadRubik(dir, rc);
+                break;
+            }
     }
+
+    fout.close();
     return 0;
 }

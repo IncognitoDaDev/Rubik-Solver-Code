@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
@@ -955,16 +957,6 @@ void actionRubik(int(&dir)[6], int(&rc)[6][3][3], char action, bool prime)
 
     case 'F': faceRotate(dir[Front], rc, !prime); break;
     case 'B': faceRotate(dir[Back], rc, !prime); break;
-        
-        // inversed (normal) moveset (formally known as the ones with prime)
-    case 'u': faceRotate(dir[Up], rc, 1); break;
-    case 'd': faceRotate(dir[Bottom], rc, 1); break;
-
-    case 'l': faceRotate(dir[Left], rc, 1); break;
-    case 'r': faceRotate(dir[Right], rc, 1); break;
-
-    case 'f': faceRotate(dir[Front], rc, 1); break;
-    case 'b': faceRotate(dir[Back], rc, 1); break;
 
         // cube rotations (not to be confused with substited letters for prime moves)
     case 'x': // rotate the front face to up face
@@ -1045,6 +1037,79 @@ void ReadRubik(int (& dir)[6], int rc[6][3][3])
             cout << intTocharColorType(rc[dir[Back]][y][x]) << " ";
         cout << endl;
     }
+}
+
+enum Stage
+{
+    FirstLayer = 0,
+    SecondLayer = 1,
+    ThirdLayer = 2
+};
+
+enum Step
+{
+    Flower = 0,
+    FirstLayerPlus = 1,
+    FirstLayerCorner = 2,
+
+    SecondLayerEdge = 3,
+
+    ThirdLayerPlus = 4,
+    ThirdLayerFace = 5,
+    ThirdLayerCorner = 6,
+    ThirdLayerEdge = 7
+
+};
+
+void queueMove(int (& dir)[6], int (&rc)[6][3][3], char move[])
+{
+    int nrc[6][3][3];
+    //string debugLog = "";
+
+    char oldMove;
+
+    for (int i = 0; i < strlen(move); i++)
+    {
+        // This might be a bit confusing so lets break it down first [insert_dance_emoji]
+        // This is a small side dish of code to interpreting what kind of moves
+        // We already have the move we want to execute,
+        // we just need to know if its a prime one or a double move or a simple move.
+        if (move[i] == ' ' || move[i] == 'NULL') continue;
+
+        if (move[i] == 39)
+        {
+            actionRubik(dir, rc, oldMove, 1);
+            actionRubik(dir, rc, oldMove, 1);
+        }
+        else if (move[i] == '2')
+        {
+            actionRubik(dir, rc, oldMove, 0);
+        }
+        else
+        {
+            actionRubik(dir, rc, move[i], 0);
+        }
+
+        oldMove = move[i];
+    }
+}
+
+void SolveRubik(int(&dir)[6], int(&rc)[6][3][3], int showcaseLevel)
+{
+    int LayerStatus = 0,
+        StepStatus = 0;
+    bool issue = false;
+
+    // Flower
+    bool done = false;
+    int mainColor = rc[dir[Front]][1][1];
+
+    if (mainColor == rc[dir[Back]][0][1] &&
+        mainColor == rc[dir[Back]][1][0] &&
+        mainColor == rc[dir[Back]][1][2] &&
+        mainColor == rc[dir[Back]][2][1]) done = true;
+
+    
 }
 
 int main()
@@ -1187,6 +1252,7 @@ int main()
 
     while (RubikGame)
     {
+        char q[] = "F B";
         int tempDir[6] = { 0, 1, 2 , 3, 4, 5 };
         char move;
         cout << endl << "Your move... ";
@@ -1228,6 +1294,14 @@ int main()
                 rotateFaceToMatchOrientation(tempDir, rc, 0);
                 ReadRubik(tempDir, rc);
                 rotateFaceToMatchOrientation(tempDir, rc, 1);
+                cout << endl;
+                break;
+
+            case '1': // Solve the Rubik Cube algorithmically and spit out a line of RC notations as a solution
+                cout << "Solving the cube..." << endl;
+                SolveRubik(dir, rc, 0);
+                cout << endl;
+                ReadRubik(dir, rc);
                 cout << endl;
                 break;
 
