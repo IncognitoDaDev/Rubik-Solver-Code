@@ -1,5 +1,6 @@
 #include "PuzzleState.h"
 #include "RubikCube.h"
+#include "AStarSearch.h"
 #include <string>
 #include <iostream>
 
@@ -83,11 +84,11 @@ void PuzzleState::HashRC(RubikCube& nodeGoal, int(&hash)[3][3][3])
 	hash[0][1][1] = HashPiece(Center, PieceID(nodeGoal, Center, colorID), Back);
 
 	// Corners
-	colorID[0] = Back * 100 + 0; colorID[1] = Up * 100 + 0; colorID[2] = Left * 100 + 0;
+	colorID[0] = Back * 100 + 2; colorID[1] = Up * 100 + 0; colorID[2] = Left * 100 + 0;
 	hash[0][0][0] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID), 312);
-	colorID[0] = Back * 100 + 2; colorID[1] = Up * 100 + 2; colorID[2] = Right * 100 + 2;
+	colorID[0] = Back * 100 + 0; colorID[1] = Up * 100 + 2; colorID[2] = Right * 100 + 2;
 	hash[0][0][2] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID), 412);
-	colorID[0] = Back * 100 + 0; colorID[1] = Bottom * 100 + 20; colorID[2] = Left * 100 + 20;
+	colorID[0] = Back * 100 + 22; colorID[1] = Bottom * 100 + 20; colorID[2] = Left * 100 + 20;
 	hash[0][2][0] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID), 352);
 	colorID[0] = Back * 100 + 20; colorID[1] = Bottom * 100 + 22; colorID[2] = Right * 100 + 22;
 	hash[0][2][2] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID), 452);
@@ -131,6 +132,62 @@ void PuzzleState::HashRC(RubikCube& nodeGoal, int(&hash)[3][3][3])
 	// Bottom ------
 	colorID[0] = Bottom * 100 + 11;
 	hash[1][2][1] = HashPiece(Center, PieceID(nodeGoal, Center, colorID), Bottom);
+}
+
+void PuzzleState::DehashRC(int(&hash)[3][3][3], int(&rc)[6][3][3])
+{
+	//Front ------
+	rc[Front][1][1] = hash[2][1][1]%10;
+
+	// Corners
+	rc[Front][0][0] = hash[2][0][0] % 10; rc[Up][2][0] = hash[2][0][0] / 10 % 10; rc[Left][0][2] = hash[2][0][0] / 100 % 10;
+	rc[Front][0][2] = hash[2][0][2] % 10; rc[Up][2][2] = hash[2][0][2] / 10 % 10; rc[Right][0][0] = hash[2][0][2] / 100 % 10;
+	rc[Front][2][0] = hash[2][2][0] % 10; rc[Bottom][0][0] = hash[2][2][0] / 10 % 10; rc[Left][2][2] = hash[2][2][0] / 100 % 10;
+	rc[Front][2][2] = hash[2][2][2] % 10; rc[Bottom][0][2] = hash[2][2][2] / 10 % 10; rc[Right][2][0] = hash[2][2][2] / 100 % 10;
+
+	// Edge
+	rc[Front][0][1] = hash[2][0][1] % 10; rc[Up][2][1] = hash[2][0][1] / 10 % 10;
+	rc[Front][1][2] = hash[2][1][2] % 10; rc[Right][1][0] = hash[2][1][2] / 10 % 10;
+	rc[Front][2][1] = hash[2][2][1] % 10; rc[Bottom][0][1] = hash[2][2][1] / 10 % 10;
+	rc[Front][1][0] = hash[2][1][0] % 10; rc[Left][1][2] = hash[2][1][0] / 10 % 10;
+
+
+	//Back ------
+	rc[Back][1][1] = hash[0][1][1] % 10;
+
+	// Corners
+	rc[Back][0][2] = hash[0][0][0] % 10; rc[Up][0][0] = hash[0][0][0] / 10 % 10; rc[Left][0][0] = hash[0][0][0] / 100 % 10;
+	rc[Back][0][0] = hash[0][0][2] % 10; rc[Up][0][2] = hash[0][0][2] / 10 % 10; rc[Right][0][2] = hash[0][0][2] / 100 % 10;
+	rc[Back][2][2] = hash[0][2][0] % 10; rc[Bottom][2][0] = hash[0][2][0] / 10 % 10; rc[Left][2][0] = hash[0][2][0] / 100 % 10;
+	rc[Back][2][0] = hash[0][2][2] % 10; rc[Bottom][2][2] = hash[0][2][2] / 10 % 10; rc[Right][2][2] = hash[0][2][2] / 100 % 10;
+
+	// Edge
+	rc[Back][0][1] = hash[0][0][1] % 10; rc[Up][0][1] = hash[0][0][1] / 10 % 10;
+	rc[Back][1][0] = hash[0][1][2] % 10; rc[Right][1][2] = hash[0][1][2] / 10 % 10;
+	rc[Back][2][1] = hash[0][2][1] % 10; rc[Bottom][2][1] = hash[0][2][1] / 10 % 10;
+	rc[Back][1][2] = hash[0][1][0] % 10; rc[Left][1][0] = hash[0][1][0] / 10 % 10;
+
+
+	// Right ------
+	rc[Right][1][1] = hash[1][1][2] % 10;
+
+	// Edges
+	rc[Right][0][1] = hash[1][0][2] % 10; rc[Up][1][2] = hash[1][0][2] / 10 % 10;
+	rc[Right][2][1] = hash[1][2][2] % 10; rc[Bottom][1][2] = hash[1][2][2] / 10 % 10;
+
+
+	// Left ------
+	rc[Left][1][1] = hash[1][1][0] % 10;
+
+	// Edges
+	rc[Left][0][1] = hash[1][0][0] % 10; rc[Up][1][0] = hash[1][0][0] / 10 % 10;
+	rc[Left][2][1] = hash[1][2][0] % 10; rc[Bottom][1][0] = hash[1][2][0] / 10 % 10;
+
+	// Up ------
+	rc[Up][1][1] = hash[1][0][1] % 10;
+
+	// Bottom ------
+	rc[Bottom][1][1] = hash[1][2][1] % 10;
 }
 
 void PuzzleState::DesiredCoords(int hash[3][3][3], int pieceID, int& zyx)
@@ -508,7 +565,38 @@ void PuzzleState::copyMoves(PuzzleState& rhs)
 		moves.push_back(rhs.moves[i]);
 }
 
-float PuzzleState::GoalDistanceEstimate_1stPhase(PuzzleState& nodeGoal)
+std::string PuzzleState::returnSolution()
+{
+	std::string a = "";
+	for (int i = 0; i < moves.size(); i++)
+		switch (moves[i])
+		{
+		case 0: a += "U "; break;
+		case 1: a += "D "; break;
+		case 2: a += "F "; break;
+		case 3: a += "B "; break;
+		case 4: a += "R "; break;
+		case 5: a += "L "; break;
+		case 6: a += "U' "; break;
+		case 7: a += "D' "; break;
+		case 8: a += "F' "; break;
+		case 9: a += "B' "; break;
+		case 10: a += "R' "; break;
+		case 11: a += "L' "; break;
+		}
+
+	return a;
+}
+
+void PuzzleState::copyHash(int(&hash)[3][3][3], int rhs[3][3][3])
+{
+	for (int z = 0; z < 3; z++)
+		for (int y = 0; y < 3; y++)
+			for (int x = 0; x < 3; x++)
+					hash[z][y][x] = rhs[z][y][x];
+}
+
+float PuzzleState::GoalDistanceEstimate(PuzzleState& nodeGoal)
 {
 	// Returns the cost that is the sum of moves for pieces to be positioned properly plus the orientation
 
@@ -536,108 +624,64 @@ float PuzzleState::GoalDistanceEstimate_1stPhase(PuzzleState& nodeGoal)
 	int edges[12] = { 1, 10, 12, 21, 100, 102, 120, 122, 201, 210, 212, 221 };
 	int zyx = 0;
 
-	/*The obvious heuristic for Rubik's Cube is a three dimensional version of the Manhattan distance.
-		For each cubie, compute the minimum number of moves required to correctly position and orient it,
-		and sum these values over all cubies.Unfortunately, to be admissible, this value has to be divided by 8,
-		since every twist moves 8 cubies. A better heuristic is to take the maximum of the sum of Manhattan distances
-		of the corner cubies, divided by four, and the maximum of the sum of edge cubies divided by 4.
-		The expected value of the Manhattan distance of the edge cubies is 22/4=5.5, while the corresponding
-		values for the corner cubies is 12.333/4 that's approximately equal to 3.08 partly
-		because there are 12 edge cubies, but only eight corner cubes.*/
-
 	for (int corner : corners)
 	{
-		DesiredCoords(hash, hash[corner / 100][corner / 10 % 10][corner % 10], zyx);
+		int h[3][3][3];
+		copyHash(h, hash);
 
-		int id = hash[corner / 100][corner / 10 % 10][corner % 10];
-		int	desiredid = goal_hash[zyx / 100][zyx / 10 % 10][zyx % 10];
+		PuzzleState cubie;
+		AStarSearch miniCubieSearch;
 
-		float calc = abs(float(corner / 100) - float(zyx / 100)) + abs(float(corner / 10 % 10) - float(zyx / 10 % 10)) + abs(float(corner % 10) - float(zyx % 10));
-
-		int p = 1; float distOrient = 0;
-		// Check for orientation on every color
-		for (int i = 0; i < 3; i++)
-		{
-			int f = 0;
-			for (int i = 0; i < 6; i++)
-			{
-				if (id / p % 10 == hash[centers[i] / 100][centers[i] / 10 % 10][centers[i] % 10] % 10)
+		for (int z = 0; z < 3; z++)
+			for (int y = 0; y < 3; y++)
+				for (int x = 0; x < 3; x++)
 				{
-					f = i;
-					break;
+					if (!(corner / 100 == z && corner / 10 % 10 == y && corner % 10 == x))
+						h[z][y][x] = 777;
 				}
-			}
 
-			switch (distCenter(f, id / 1000 / p % 10))
-			{
-			case 0: break; // The color is positioned properly
-			case 1:
-				if (calc == 0) distOrient += 2;
-				else distOrient += 3;
-				break;
-			case 2:
-				distOrient += 3;
-				break;
-			}
+		h[0][1][1] = hash[0][1][1];
+		h[2][1][1] = hash[2][1][1];
+		h[1][1][0] = hash[1][1][0];
+		h[1][1][2] = hash[1][1][2];
+		h[1][2][1] = hash[1][2][1];
+		h[1][0][1] = hash[1][0][1];
 
-			p *= 10;
-		}
-		cost += distOrient / 12.0f;
+		DehashRC(h, cubie.RC.rc);
+		cubie.f = cubie.CA_GoalDistEst(cubie);
+		miniCubieSearch.clopen.push_back(cubie);
+
+		cost += miniCubieSearch.ColorAlgo() / 1.50f /4.0f;
 	}
 
-	float maxDistEdge = 0;
 	for (int edge : edges)
 	{
-		DesiredCoords(hash, hash[edge / 100][edge / 10 % 10][edge % 10], zyx);
-		int id = hash[edge / 100][edge / 10 % 10][edge % 10];
-		int desiredid = goal_hash[zyx / 100][zyx / 10 % 10][zyx % 10];
+		int h[3][3][3];
+		copyHash(h, hash);
 
-		float calc = abs(float(edge / 100) - float(zyx / 100)) + abs(float(edge / 10 % 10) - float(zyx / 10 % 10)) + abs(float(edge % 10) - float(zyx % 10));
+		PuzzleState cubie;
+		AStarSearch miniCubieSearch;
 
-		int p = 1; float distOrient = 0;
-		// Check for orientation on every color
-		for (int i = 0; i < 2; i++)
-		{
-			int f = 0;
-			for (int i = 0; i < 6; i++)
-			{
-				if (id / p % 10 == hash[centers[i] / 100][centers[i] / 10 % 10][centers[i] % 10] % 10)
+		for (int z = 0; z < 3; z++)
+			for (int y = 0; y < 3; y++)
+				for (int x = 0; x < 3; x++)
 				{
-					f = i;
-					break;
+					if (!(edge / 100 == z && edge / 10 % 10 == y && edge % 10 == x))
+						h[z][y][x] = 777;
 				}
-			}
 
-			switch (distCenter(f, id / 1000 / p % 10))
-			{
-			case 0: break; // The color is positioned properly
-			case 1:
-				switch ((int)calc)
-				{
-				case 0:
-					distOrient += 3;
-					break;
-				case 2: // It means that our correct position is just across the face
-					if (zyx / 100 == edge / 100 && zyx / 10 % 10 == edge / 10 % 10 || zyx / 10 % 10 == edge / 10 % 10 && zyx % 10 == edge % 10)
-						distOrient += 3; //Our correct position is at the opposite side of the face
-					else distOrient += 2; // Our correct position is adjancent
-					break;
-				case 4:
-					distOrient += 2;
-					break;
-				}
-				break;
-			case 2:
-				if (zyx / 100 == edge / 100 && zyx / 10 % 10 == edge / 10 % 10 || zyx / 10 % 10 == edge / 10 % 10 && zyx % 10 == edge % 10)
-					distOrient += 2;
-				else distOrient += 3; // Our correct position is adjancent on the opposite side of the cube
-				break;
-			}
+		h[0][1][1] = hash[0][1][1];
+		h[2][1][1] = hash[2][1][1];
+		h[1][1][0] = hash[1][1][0];
+		h[1][1][2] = hash[1][1][2];
+		h[1][2][1] = hash[1][2][1];
+		h[1][0][1] = hash[1][0][1];
 
-			p *= 10;
-		}
-		cost += distOrient / 8.0f;
+		DehashRC(h, cubie.RC.rc);
+		cubie.f = cubie.CA_GoalDistEst(cubie);
+		miniCubieSearch.clopen.push_back(cubie);
 
+		cost += miniCubieSearch.ColorAlgo() /1.50f /4.0f;
 	}
 
 	return cost;
@@ -668,32 +712,83 @@ bool PuzzleState::IsGoal(PuzzleState& nodeGoal)
 	return true;
 }
 
-std::string PuzzleState::returnSolution()
-{
-	std::string a = "";
-	for (int i = 0; i < moves.size(); i++)
-		switch (moves[i])
-		{
-		case 0: a += "U "; break;
-		case 1: a += "D "; break;
-		case 2: a += "F "; break;
-		case 3: a += "B "; break;
-		case 4: a += "R "; break;
-		case 5: a += "L "; break;
-		case 6: a += "U' "; break;
-		case 7: a += "D' "; break;
-		case 8: a += "F' "; break;
-		case 9: a += "B' "; break;
-		case 10: a += "R' "; break;
-		case 11: a += "L' "; break;
-		}
-
-	return a;
-}
-
 void PuzzleState::SumCost(PuzzleState& nodeGoal, PuzzleState nodeParent)
 {
-	nodeGoal.g = nodeParent.g + 1;
+	nodeGoal.g = nodeParent.g + 1.0f;
 	nodeGoal.h = GoalDistanceEstimate(nodeGoal);
 	nodeGoal.f = g + h;
 }
+
+float PuzzleState::CA_GoalDistEst(PuzzleState& nodeGoal)
+{
+	// Return the estimated cost to goal from this node
+	float cost = 0;
+
+	int hash[3][3][3], goal_hash[3][3][3];
+	RubikCube newGoal;
+
+	// Creating the corect result from a persective point (accounting for color placement)
+	for (int f = 0; f < 6; f++)
+	{
+		for (int i = 0; i < 9; i++)
+		{
+			newGoal.rc[f][i / 3][i % 3] = nodeGoal.RC.rc[f][1][1];
+		}
+	}
+	HashRC(newGoal, goal_hash);
+	HashRC(nodeGoal.RC, hash);
+
+	int zyx = 0;
+	int i = 0;
+
+	int cubies[20] = { 0, 2, 20, 22, 200, 202, 220, 222, 1, 10, 12, 21, 100, 102, 120, 122, 201, 210, 212, 221 };
+	for (int cubie : cubies)
+	{
+		if (hash[cubie / 100][cubie / 10 % 10][cubie % 10] != 777) i = cubie;
+	}
+
+	DesiredCoords(hash, hash[i/100][i/10%10][i%10], zyx);
+
+	float calc = abs(i/100 - zyx / 100) + abs(i/10%10 - zyx / 10 % 10) + abs(i%10 - zyx % 10);
+
+	cost += calc;
+
+	return cost;
+}
+
+bool PuzzleState::CA_IsGoal(PuzzleState& nodeGoal)
+{
+	int hash[3][3][3], goal_hash[3][3][3];
+	RubikCube newGoal;
+
+	// Creating the corect result from a persective point (accounting for color placement)
+	for (int f = 0; f < 6; f++)
+	{
+		for (int i = 0; i < 9; i++)
+		{
+			newGoal.rc[f][i / 3][i % 3] = nodeGoal.RC.rc[f][1][1];
+		}
+	}
+	HashRC(newGoal, goal_hash);
+	HashRC(nodeGoal.RC, hash);
+
+	int cubies[20] = { 0, 2, 20, 22, 200, 202, 220, 222, 1, 10, 12, 21, 100, 102, 120, 122, 201, 210, 212, 221 };
+
+	for (int cubie : cubies)
+	{
+		if (hash[cubie / 100][cubie / 10 % 10][cubie % 10] == goal_hash[cubie / 100][cubie / 10 % 10][cubie % 10]
+			&& hash[cubie / 100][cubie / 10 % 10][cubie % 10] != 777) return true;
+	}
+
+	return false;
+}
+
+void PuzzleState::CA_SumCost(PuzzleState& nodeGoal, PuzzleState nodeParent)
+{
+	nodeGoal.g = nodeParent.g + 1.50f;
+	nodeGoal.h = CA_GoalDistEst(nodeGoal);
+	nodeGoal.f = g + h;
+}
+
+
+

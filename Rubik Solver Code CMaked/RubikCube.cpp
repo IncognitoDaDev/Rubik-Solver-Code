@@ -50,9 +50,9 @@ std::string RubikCube::intTocharColorType(int n)
         return "[32mg[0m";
     case Orange:
         return "[33mo[0m";
+    default:
+        return "\033[1m\033[30m#\033[0m";
     }
-
-    return "A";
 }
 
 void RubikCube::identifyFaces(int(&dir)[6])

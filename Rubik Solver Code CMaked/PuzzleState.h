@@ -11,12 +11,14 @@ public:
 			h = 0; // heuristic estimate of distance to goal
 
 	std::vector<int> moves;
+	int previousMove = -1;
 
 	RubikCube RC;
 
 	int HashPiece(int typeOfPiece, int colors, int orientations);
 	int PieceID(RubikCube &nodeGoal, int typeOfPiece, int *coords);
 	void HashRC(RubikCube &nodeGoal, int (&hash)[3][3][3]);
+	void DehashRC(int(&hash)[3][3][3], int(&rc)[6][3][3]);
 	void DesiredCoords(int hash[3][3][3], int pieceID, int& zyx);
 	void DebugHash(int(&hash)[3][3][3]);
 	int distCenter(int face, int pieceFace);
@@ -24,12 +26,13 @@ public:
 	void copyMoves(PuzzleState& rhs);
 	std::string returnSolution();
 
-	float GoalDistanceEstimate_1stPhase(PuzzleState& nodeGoal);
-	bool IsGoal_1stPhase(PuzzleState& nodeGoal);
-	void SumCost_1stPhase(PuzzleState& nodeGoal, PuzzleState nodeParent);
+	void copyHash(int(&hash)[3][3][3], int rhs[3][3][3]);
 
-	float GoalDistanceEstimate_2ndPhase(PuzzleState& nodeGoal);
-	bool IsGoal_2ndPhase(PuzzleState& nodeGoal);
-	void SumCost_2ndPhase(PuzzleState& nodeGoal, PuzzleState nodeParent);
+	float GoalDistanceEstimate(PuzzleState& nodeGoal);
+	bool IsGoal(PuzzleState& nodeGoal);
+	void SumCost(PuzzleState& nodeGoal, PuzzleState nodeParent);
+	bool CA_IsGoal(PuzzleState& nodeGoal);
+	void CA_SumCost(PuzzleState& nodeGoal, PuzzleState nodeParent);
+	float CA_GoalDistEst(PuzzleState& nodeGoal);
 };
 

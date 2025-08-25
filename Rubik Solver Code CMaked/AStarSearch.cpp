@@ -10,7 +10,7 @@ bool AStarSearch::AddSuccesor(PuzzleState& node)
 	return true;
 }
 
-void AStarSearch::GetSuccessors_1stPhase(PuzzleState nodeParent)
+bool AStarSearch::GetSuccessors(PuzzleState nodeParent)
 {
 	if (nodeParent.IsGoal(nodeParent)) return true;
 
@@ -18,62 +18,41 @@ void AStarSearch::GetSuccessors_1stPhase(PuzzleState nodeParent)
 
 	for (int i = 0; i < strlen(basicMoves); i++)
 	{
-		PuzzleState NewNode;
-		// Making an succesor for the basic/clockwise move
-		nodeParent.RC.copyRC(NewNode.RC.rc, nodeParent.RC.rc);
-		NewNode.RC.actionRubik(NewNode.RC.dir, NewNode.RC.rc, basicMoves[i], false);
-		
-		NewNode.copyMoves(nodeParent);
+		if (nodeParent.previousMove - 6 != 6)
+		{
 
-		NewNode.SumCost(NewNode, nodeParent);
-		NewNode.moves.push_back(i);
-		AddSuccesor(NewNode);
+			PuzzleState NewNode;
+			// Making an succesor for the basic/clockwise move
+			nodeParent.RC.copyRC(NewNode.RC.rc, nodeParent.RC.rc);
+			NewNode.RC.actionRubik(NewNode.RC.dir, NewNode.RC.rc, basicMoves[i], false);
+			NewNode.previousMove = i;
 
-		PuzzleState NewNode2;
+			NewNode.copyMoves(nodeParent);
 
-		// And another one for the prime/anticlockwise move
-		nodeParent.RC.copyRC(NewNode2.RC.rc, nodeParent.RC.rc);
-		NewNode2.RC.actionRubik(NewNode2.RC.dir, NewNode2.RC.rc, basicMoves[i], true);
+			NewNode.SumCost(NewNode, nodeParent);
+			NewNode.moves.push_back(i);
+			AddSuccesor(NewNode);
+		}
 
-		NewNode2.copyMoves(nodeParent);
+		if (nodeParent.previousMove != i)
+		{
+			PuzzleState NewNode2;
 
-		NewNode2.SumCost(NewNode2, nodeParent);
-		NewNode2.moves.push_back(i+6);
-		AddSuccesor(NewNode2); 
-	}
-}
+			// And another one for the prime/anticlockwise move
+			nodeParent.RC.copyRC(NewNode2.RC.rc, nodeParent.RC.rc);
+			NewNode2.RC.actionRubik(NewNode2.RC.dir, NewNode2.RC.rc, basicMoves[i], true);
+			NewNode2.previousMove = i + 6;
 
-void AStarSearch::GetSuccessors_2ndPhase(PuzzleState nodeParent)
-{
-	if (nodeParent.IsGoal(nodeParent)) return true;
+			NewNode2.copyMoves(nodeParent);
 
-	char basicMoves[11] = "UDF2B2R2L2";
-
-	for (int i = 0; i < strlen(basicMoves); i++)
-	{
-		PuzzleState NewNode;
-		// Making an succesor for the basic/clockwise move
-		nodeParent.RC.copyRC(NewNode.RC.rc, nodeParent.RC.rc);
-		NewNode.RC.actionRubik(NewNode.RC.dir, NewNode.RC.rc, basicMoves[i], false);
-
-		NewNode.copyMoves(nodeParent);
-
-		NewNode.SumCost(NewNode, nodeParent);
-		NewNode.moves.push_back(i);
-		AddSuccesor(NewNode);
+			NewNode2.SumCost(NewNode2, nodeParent);
+			NewNode2.moves.push_back(i + 6);
+			AddSuccesor(NewNode2);
+		}
 	}
 }
 
 void AStarSearch::Algorithm()
-{
-	std::cout << "Initializing First Phase... (Looking for a G1 state!)";
-	FirstPhase();
-	std::cout << "Found a G1 State, initializing Second Phase... (Solving the Rubik Cube!)";
-	SecondPhase();
-}
-
-
-void AStarSearch::FirstPhase()
 {
 	PuzzleState node_current;
 	open.push_back(clopen[0]);
@@ -87,7 +66,7 @@ void AStarSearch::FirstPhase()
 			for (PuzzleState& node : open)
 				if (node_current.f > node.f) node_current = node;
 
-			if (open.size() > nr * 50)
+			if (open.size() > nr * 10)
 			{
 				std::cout << open.size() << " - g: " << node_current.g << "/ f: " << node_current.f << std::endl;
 				nr++;
@@ -96,7 +75,7 @@ void AStarSearch::FirstPhase()
 			if (node_current.IsGoal(node_current) || node_current.g == node_current.f) break;
 
 			clopen.clear();
-			GetSuccessors_1stPhase(node_current);
+			GetSuccessors(node_current);
 
 			for (vector<PuzzleState>::iterator n = clopen.begin(); n != clopen.end();)
 			{
@@ -147,12 +126,52 @@ void AStarSearch::FirstPhase()
 	node_current.DebugHash(hash);*/
 }
 
-void AStarSearch::SecondPhase()
+bool AStarSearch::CA_GetSuccessors(PuzzleState nodeParent)
+{
+	if (nodeParent.CA_IsGoal(nodeParent)) return true;
+
+	char basicMoves[7] = "UDFBRL";
+
+	for (int i = 0; i < strlen(basicMoves); i++)
+	{
+		if (nodeParent.previousMove - 6 != i) 
+		{
+
+		PuzzleState NewNode;
+		// Making an succesor for the basic/clockwise move
+		nodeParent.RC.copyRC(NewNode.RC.rc, nodeParent.RC.rc);
+		NewNode.RC.actionRubik(NewNode.RC.dir, NewNode.RC.rc, basicMoves[i], false);
+		NewNode.previousMove = i;
+
+		NewNode.copyMoves(nodeParent);
+
+		NewNode.CA_SumCost(NewNode, nodeParent);
+		NewNode.moves.push_back(i);
+		AddSuccesor(NewNode);
+		}
+
+		if (nodeParent.previousMove != i)
+		{
+			PuzzleState NewNode2;
+
+			// And another one for the prime/anticlockwise move
+			nodeParent.RC.copyRC(NewNode2.RC.rc, nodeParent.RC.rc);
+			NewNode2.RC.actionRubik(NewNode2.RC.dir, NewNode2.RC.rc, basicMoves[i], true);
+			NewNode2.previousMove = i + 6;
+
+			NewNode2.copyMoves(nodeParent);
+
+			NewNode2.CA_SumCost(NewNode2, nodeParent);
+			NewNode2.moves.push_back(i + 6);
+			AddSuccesor(NewNode2);
+		}
+	}
+}
+
+int AStarSearch::ColorAlgo()
 {
 	PuzzleState node_current;
 	open.push_back(clopen[0]);
-
-	int nr = 0;
 
 	while (!open.empty())
 	{
@@ -161,16 +180,10 @@ void AStarSearch::SecondPhase()
 		for (PuzzleState& node : open)
 			if (node_current.f > node.f) node_current = node;
 
-		if (open.size() > nr * 50)
-		{
-			std::cout << open.size() << " - g: " << node_current.g << "/ f: " << node_current.f << std::endl;
-			nr++;
-		}
-
-		if (node_current.IsGoal(node_current) || node_current.g == node_current.f) break;
+		if (node_current.CA_IsGoal(node_current) || node_current.g == node_current.f) break;
 
 		clopen.clear();
-		GetSuccessors_2ndPhase(node_current);
+		CA_GetSuccessors(node_current);
 
 		for (vector<PuzzleState>::iterator n = clopen.begin(); n != clopen.end();)
 		{
@@ -211,13 +224,6 @@ void AStarSearch::SecondPhase()
 		closed.push_back(node_current);
 	}
 
-	cout << endl << "f: " << node_current.f << " / g: " << node_current.g << endl;
-	node_current.RC.ReadRubik(node_current.RC.dir, node_current.RC.rc);
-
-	cout << endl << node_current.returnSolution() << endl;
-
-	/*int hash[3][3][3];
-	node_current.HashRC(node_current.RC, hash);
-	node_current.DebugHash(hash);*/
+	return node_current.g;
 }
 
