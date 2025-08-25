@@ -127,8 +127,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AStarSearch.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="PuzzleState.cpp" />
     <ClCompile Include="RubikCube.cpp" />
+    <ClCompile Include="Webcam.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="RubikCube.txt" />
@@ -137,7 +140,11 @@
     <Text Include="Backup.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AStarSearch.h" />
+    <ClInclude Include="main.h" />
+    <ClInclude Include="PuzzleState.h" />
     <ClInclude Include="RubikCube.h" />
+    <ClInclude Include="Webcam.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

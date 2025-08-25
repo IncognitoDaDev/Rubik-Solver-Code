@@ -24,6 +24,15 @@
     <ClCompile Include="RubikCube.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Webcam.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PuzzleState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AStarSearch.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="RubikCube.txt">
@@ -35,6 +44,18 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RubikCube.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Webcam.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PuzzleState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AStarSearch.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="main.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
