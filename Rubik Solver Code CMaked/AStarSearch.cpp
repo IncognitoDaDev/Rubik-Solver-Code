@@ -10,9 +10,9 @@ bool AStarSearch::AddSuccesor(PuzzleState& node)
 	return true;
 }
 
-void AStarSearch::GetSuccessors_1stPhase(PuzzleState nodeParent)
+bool AStarSearch::GetSuccessors_1stPhase(PuzzleState nodeParent)
 {
-	if (nodeParent.IsGoal(nodeParent)) return true;
+	if (nodeParent.IsGoal_1stPhase(nodeParent)) return true;
 
 	char basicMoves[7] = "UDFBRL";
 
@@ -25,7 +25,7 @@ void AStarSearch::GetSuccessors_1stPhase(PuzzleState nodeParent)
 		
 		NewNode.copyMoves(nodeParent);
 
-		NewNode.SumCost(NewNode, nodeParent);
+		NewNode.SumCost_1stPhase(NewNode, nodeParent);
 		NewNode.moves.push_back(i);
 		AddSuccesor(NewNode);
 
@@ -37,15 +37,15 @@ void AStarSearch::GetSuccessors_1stPhase(PuzzleState nodeParent)
 
 		NewNode2.copyMoves(nodeParent);
 
-		NewNode2.SumCost(NewNode2, nodeParent);
+		NewNode2.SumCost_1stPhase(NewNode2, nodeParent);
 		NewNode2.moves.push_back(i+6);
 		AddSuccesor(NewNode2); 
 	}
 }
 
-void AStarSearch::GetSuccessors_2ndPhase(PuzzleState nodeParent)
+bool AStarSearch::GetSuccessors_2ndPhase(PuzzleState nodeParent)
 {
-	if (nodeParent.IsGoal(nodeParent)) return true;
+	if (nodeParent.IsGoal_2ndPhase(nodeParent)) return true;
 
 	char basicMoves[11] = "UDF2B2R2L2";
 
@@ -58,7 +58,7 @@ void AStarSearch::GetSuccessors_2ndPhase(PuzzleState nodeParent)
 
 		NewNode.copyMoves(nodeParent);
 
-		NewNode.SumCost(NewNode, nodeParent);
+		NewNode.SumCost_2ndPhase(NewNode, nodeParent);
 		NewNode.moves.push_back(i);
 		AddSuccesor(NewNode);
 	}
@@ -73,7 +73,7 @@ void AStarSearch::Algorithm()
 }
 
 
-void AStarSearch::FirstPhase()
+PuzzleState AStarSearch::FirstPhase()
 {
 	PuzzleState node_current;
 	open.push_back(clopen[0]);
@@ -93,7 +93,7 @@ void AStarSearch::FirstPhase()
 				nr++;
 			}
 
-			if (node_current.IsGoal(node_current) || node_current.g == node_current.f) break;
+			if (node_current.IsGoal_1stPhase(node_current) || node_current.g == node_current.f) break;
 
 			clopen.clear();
 			GetSuccessors_1stPhase(node_current);
@@ -142,12 +142,14 @@ void AStarSearch::FirstPhase()
 
 	cout << endl << node_current.returnSolution() << endl;
 
+	return node_current;
+
 	/*int hash[3][3][3];
 	node_current.HashRC(node_current.RC, hash);
 	node_current.DebugHash(hash);*/
 }
 
-void AStarSearch::SecondPhase()
+PuzzleState AStarSearch::SecondPhase()
 {
 	PuzzleState node_current;
 	open.push_back(clopen[0]);
@@ -167,7 +169,7 @@ void AStarSearch::SecondPhase()
 			nr++;
 		}
 
-		if (node_current.IsGoal(node_current) || node_current.g == node_current.f) break;
+		if (node_current.IsGoal_2ndPhase(node_current) || node_current.g == node_current.f) break;
 
 		clopen.clear();
 		GetSuccessors_2ndPhase(node_current);
@@ -215,6 +217,8 @@ void AStarSearch::SecondPhase()
 	node_current.RC.ReadRubik(node_current.RC.dir, node_current.RC.rc);
 
 	cout << endl << node_current.returnSolution() << endl;
+
+	return node_current;
 
 	/*int hash[3][3][3];
 	node_current.HashRC(node_current.RC, hash);

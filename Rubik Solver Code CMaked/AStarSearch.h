@@ -12,8 +12,8 @@ public:
     vector<PuzzleState> clopen; //temp variable
 
     bool AddSuccesor(PuzzleState& node);
-    void FirstPhase();
-    void SecondPhase();
+    PuzzleState FirstPhase();
+    PuzzleState SecondPhase();
     void GetSuccessors_1stPhase(PuzzleState nodeParent);
     void GetSuccessors_2ndPhase(PuzzleState nodeParent);
     void Algorithm();
