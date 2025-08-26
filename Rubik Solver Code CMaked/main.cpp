@@ -225,7 +225,7 @@ int main()
 
     while (RubikGame)
     {
-        char q[] = "R' B L2 U' L' F D' R2 B";
+        char q[] = "F2 U B2 F' U L R F'";
         int tempDir[6] = { 0, 1, 2 , 3, 4, 5 };
         char move;
         cout << endl << "Your move... ";

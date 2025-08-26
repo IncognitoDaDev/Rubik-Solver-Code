@@ -1,5 +1,4 @@
 #include "RubikCube.h"
-#include <string>
 #include <iostream>
 
 using namespace std;
@@ -50,9 +49,10 @@ std::string RubikCube::intTocharColorType(int n)
         return "[32mg[0m";
     case Orange:
         return "[33mo[0m";
-    }
 
-    return "A";
+    default: 
+        return "[30mA[0m";
+    }
 }
 
 void RubikCube::identifyFaces(int(&dir)[6])

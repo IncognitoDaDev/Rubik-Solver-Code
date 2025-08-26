@@ -11,6 +11,7 @@ public:
 			h = 0; // heuristic estimate of distance to goal
 
 	std::vector<int> moves;
+	int previousMove = -1;
 
 	RubikCube RC;
 
@@ -24,12 +25,8 @@ public:
 	void copyMoves(PuzzleState& rhs);
 	std::string returnSolution();
 
-	float GoalDistanceEstimate_1stPhase(PuzzleState& nodeGoal);
-	bool IsGoal_1stPhase(PuzzleState& nodeGoal);
-	void SumCost_1stPhase(PuzzleState& nodeGoal, PuzzleState nodeParent);
-
-	float GoalDistanceEstimate_2ndPhase(PuzzleState& nodeGoal);
-	bool IsGoal_2ndPhase(PuzzleState& nodeGoal);
-	void SumCost_2ndPhase(PuzzleState& nodeGoal, PuzzleState nodeParent);
+	float GoalDistanceEstimate(PuzzleState& nodeGoal);
+	bool IsGoal(PuzzleState& nodeGoal);
+	void SumCost(PuzzleState& nodeGoal, PuzzleState nodeParent);
 };
 
