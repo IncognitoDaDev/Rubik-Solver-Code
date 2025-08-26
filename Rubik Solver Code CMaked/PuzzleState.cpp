@@ -1,5 +1,6 @@
 #include "PuzzleState.h"
 #include "RubikCube.h"
+#include "AStarSearch.h"
 #include <string>
 #include <iostream>
 
@@ -131,6 +132,62 @@ void PuzzleState::HashRC(RubikCube& nodeGoal, int(&hash)[3][3][3])
 	// Bottom ------
 	colorID[0] = Bottom * 100 + 11;
 	hash[1][2][1] = HashPiece(Center, PieceID(nodeGoal, Center, colorID), Bottom);
+}
+
+void PuzzleState::DehashRC(int(&hash)[3][3][3], int(&rc)[6][3][3])
+{
+	//Front ------
+	rc[Front][1][1] = hash[2][1][1]%10;
+
+	// Corners
+	rc[Front][0][0] = hash[2][0][0] % 10; rc[Up][2][0] = hash[2][0][0] / 10 % 10; rc[Left][0][2] = hash[2][0][0] / 100 % 10;
+	rc[Front][0][2] = hash[2][0][2] % 10; rc[Up][2][2] = hash[2][0][2] / 10 % 10; rc[Right][0][0] = hash[2][0][2] / 100 % 10;
+	rc[Front][2][0] = hash[2][2][0] % 10; rc[Bottom][0][0] = hash[2][2][0] / 10 % 10; rc[Left][2][2] = hash[2][2][0] / 100 % 10;
+	rc[Front][2][2] = hash[2][2][2] % 10; rc[Bottom][0][2] = hash[2][2][2] / 10 % 10; rc[Right][2][0] = hash[2][2][2] / 100 % 10;
+
+	// Edge
+	rc[Front][0][1] = hash[2][0][1] % 10; rc[Up][2][1] = hash[2][0][1] / 10 % 10;
+	rc[Front][1][2] = hash[2][1][2] % 10; rc[Right][1][0] = hash[2][1][2] / 10 % 10;
+	rc[Front][2][1] = hash[2][2][1] % 10; rc[Bottom][0][1] = hash[2][2][1] / 10 % 10;
+	rc[Front][1][0] = hash[2][1][0] % 10; rc[Left][1][2] = hash[2][1][0] / 10 % 10;
+
+
+	//Back ------
+	rc[Back][1][1] = hash[0][1][1] % 10;
+
+	// Corners
+	rc[Back][0][2] = hash[0][0][0] % 10; rc[Up][0][0] = hash[0][0][0] / 10 % 10; rc[Left][0][0] = hash[0][0][0] / 100 % 10;
+	rc[Back][0][0] = hash[0][0][2] % 10; rc[Up][0][2] = hash[0][0][2] / 10 % 10; rc[Right][0][2] = hash[0][0][2] / 100 % 10;
+	rc[Back][2][2] = hash[0][2][0] % 10; rc[Bottom][2][0] = hash[0][2][0] / 10 % 10; rc[Left][2][0] = hash[0][2][0] / 100 % 10;
+	rc[Back][2][0] = hash[0][2][2] % 10; rc[Bottom][2][2] = hash[0][2][2] / 10 % 10; rc[Right][2][2] = hash[0][2][2] / 100 % 10;
+
+	// Edge
+	rc[Back][0][1] = hash[0][0][1] % 10; rc[Up][0][1] = hash[0][0][1] / 10 % 10;
+	rc[Back][1][0] = hash[0][1][2] % 10; rc[Right][1][2] = hash[0][1][2] / 10 % 10;
+	rc[Back][2][1] = hash[0][2][1] % 10; rc[Bottom][2][1] = hash[0][2][1] / 10 % 10;
+	rc[Back][1][2] = hash[0][1][0] % 10; rc[Left][1][0] = hash[0][1][0] / 10 % 10;
+
+
+	// Right ------
+	rc[Right][1][1] = hash[1][1][2] % 10;
+
+	// Edges
+	rc[Right][0][1] = hash[1][0][2] % 10; rc[Up][1][2] = hash[1][0][2] / 10 % 10;
+	rc[Right][2][1] = hash[1][2][2] % 10; rc[Bottom][1][2] = hash[1][2][2] / 10 % 10;
+
+
+	// Left ------
+	rc[Left][1][1] = hash[1][1][0] % 10;
+
+	// Edges
+	rc[Left][0][1] = hash[1][0][0] % 10; rc[Up][1][0] = hash[1][0][0] / 10 % 10;
+	rc[Left][2][1] = hash[1][2][0] % 10; rc[Bottom][1][0] = hash[1][2][0] / 10 % 10;
+
+	// Up ------
+	rc[Up][1][1] = hash[1][0][1] % 10;
+
+	// Bottom ------
+	rc[Bottom][1][1] = hash[1][2][1] % 10;
 }
 
 void PuzzleState::DesiredCoords(int hash[3][3][3], int pieceID, int& zyx)
@@ -533,6 +590,14 @@ std::string PuzzleState::returnSolution()
 
 float PuzzleState::GoalDistanceEstimate(PuzzleState& nodeGoal)
 {
+	for (int z = 0; z < 3; z++)
+		for (int y = 0; y < 3; y++)
+			for (int x = 0; x < 3; x++)
+					hash[z][y][x] = rhs[z][y][x];
+}
+
+float PuzzleState::GoalDistanceEstimate(PuzzleState& nodeGoal)
+{
 	// Returns the cost that is the sum of moves for pieces to be positioned properly plus the orientation
 
 	// Return the estimated cost to goal from this node
@@ -558,6 +623,15 @@ float PuzzleState::GoalDistanceEstimate(PuzzleState& nodeGoal)
 	int corners[8] = { 0, 2, 20, 22, 200, 202, 220, 222 };
 	int edges[12] = { 1, 10, 12, 21, 100, 102, 120, 122, 201, 210, 212, 221 };
 	int zyx = 0;
+
+	/*The obvious heuristic for Rubik's Cube is a three dimensional version of the Manhattan distance.
+		For each cubie, compute the minimum number of moves required to correctly position and orient it,
+		and sum these values over all cubies.Unfortunately, to be admissible, this value has to be divided by 8,
+		since every twist moves 8 cubies. A better heuristic is to take the maximum of the sum of Manhattan distances
+		of the corner cubies, divided by four, and the maximum of the sum of edge cubies divided by 4.
+		The expected value of the Manhattan distance of the edge cubies is 22/4=5.5, while the corresponding
+		values for the corner cubies is 12.333/4 that's approximately equal to 3.08 partly
+		because there are 12 edge cubies, but only eight corner cubes.*/
 
 	for (int corner : corners)
 	{
@@ -684,6 +758,32 @@ bool PuzzleState::IsGoal(PuzzleState& nodeGoal)
 
 void PuzzleState::SumCost(PuzzleState& nodeGoal, PuzzleState nodeParent)
 {
+	nodeGoal.g = nodeParent.g + 1.0f;
+	nodeGoal.h = GoalDistanceEstimate(nodeGoal);
+	nodeGoal.f = g + h;
+}
+
+float PuzzleState::CA_GoalDistEst(PuzzleState& nodeGoal)
+{
+	// Return the estimated cost to goal from this node
+	float cost = 0;
+
+	int hash[3][3][3], goal_hash[3][3][3];
+	RubikCube newGoal;
+
+	// Creating the corect result from a persective point (accounting for color placement)
+	for (int f = 0; f < 6; f++)
+	{
+		for (int i = 0; i < 9; i++)
+		{
+			newGoal.rc[f][i / 3][i % 3] = nodeGoal.RC.rc[f][1][1];
+		}
+	}
+	HashRC(newGoal, goal_hash);
+	HashRC(nodeGoal.RC, hash);
+
+void PuzzleState::SumCost(PuzzleState& nodeGoal, PuzzleState nodeParent)
+{
 	float nodeincrease, erosion;
 
 	nodeincrease = 2.4f - 0.4f * nodeGoal.moves.size();
@@ -694,3 +794,6 @@ void PuzzleState::SumCost(PuzzleState& nodeGoal, PuzzleState nodeParent)
 	nodeGoal.h = GoalDistanceEstimate(nodeGoal);
 	nodeGoal.f = g + h;
 }
+
+
+

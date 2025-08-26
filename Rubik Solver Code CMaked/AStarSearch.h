@@ -14,4 +14,6 @@ public:
     bool AddSuccesor(PuzzleState& node);
     bool GetSuccessors(PuzzleState nodeParent);
     void Algorithm();
+    bool CA_GetSuccessors(PuzzleState nodeParent);
+    int ColorAlgo();
 };

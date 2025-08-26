@@ -18,6 +18,7 @@ public:
 	int HashPiece(int typeOfPiece, int colors, int orientations);
 	int PieceID(RubikCube &nodeGoal, int typeOfPiece, int *coords);
 	void HashRC(RubikCube &nodeGoal, int (&hash)[3][3][3]);
+	void DehashRC(int(&hash)[3][3][3], int(&rc)[6][3][3]);
 	void DesiredCoords(int hash[3][3][3], int pieceID, int& zyx);
 	void DebugHash(int(&hash)[3][3][3]);
 	int distCenter(int face, int pieceFace);

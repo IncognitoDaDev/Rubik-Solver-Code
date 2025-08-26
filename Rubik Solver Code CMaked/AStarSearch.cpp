@@ -25,17 +25,21 @@ bool AStarSearch::GetSuccessors(PuzzleState nodeParent)
 
 		NewNode.copyMoves(nodeParent);
 
-		NewNode.SumCost(NewNode, nodeParent);
-		NewNode.moves.push_back(i);
-		AddSuccesor(NewNode);
+			NewNode.SumCost(NewNode, nodeParent);
+			NewNode.moves.push_back(i);
+			AddSuccesor(NewNode);
+		}
 
-		PuzzleState NewNode2;
+		if (nodeParent.previousMove != i)
+		{
+			PuzzleState NewNode2;
 
-		// And another one for the prime/anticlockwise move
-		nodeParent.RC.copyRC(NewNode2.RC.rc, nodeParent.RC.rc);
-		NewNode2.RC.actionRubik(NewNode2.RC.dir, NewNode2.RC.rc, basicMoves[i], true);
+			// And another one for the prime/anticlockwise move
+			nodeParent.RC.copyRC(NewNode2.RC.rc, nodeParent.RC.rc);
+			NewNode2.RC.actionRubik(NewNode2.RC.dir, NewNode2.RC.rc, basicMoves[i], true);
+			NewNode2.previousMove = i + 6;
 
-		NewNode2.copyMoves(nodeParent);
+			NewNode2.copyMoves(nodeParent);
 
 		NewNode2.SumCost(NewNode2, nodeParent);
 		NewNode2.moves.push_back(i + 6);
