@@ -588,18 +588,226 @@ std::string PuzzleState::returnSolution()
 	return a;
 }
 
-float PuzzleState::GoalDistanceEstimate(PuzzleState& nodeGoal)
+bool PuzzleState::IsGoal(PuzzleState& nodeGoal)
 {
+	int hash[3][3][3], goal_hash[3][3][3];
+	RubikCube newGoal;
+
+	// Creating the corect result from a persective point (accounting for color placement)
+	for (int f = 0; f < 6; f++)
+	{
+		for (int i = 0; i < 9; i++)
+		{
+			newGoal.rc[f][i / 3][i % 3] = nodeGoal.RC.rc[f][1][1];
+		}
+	}
+
+	HashRC(nodeGoal.RC, hash);
+	HashRC(newGoal, goal_hash);
+
 	for (int z = 0; z < 3; z++)
 		for (int y = 0; y < 3; y++)
 			for (int x = 0; x < 3; x++)
-					hash[z][y][x] = rhs[z][y][x];
+				if (hash[z][y][x] != goal_hash[z][y][x]) return false;
+
+	return true;
+}
+
+float PuzzleState::GoalDistanceEstimate_EdgeOrient(PuzzleState& nodeGoal)
+{
+	// Return the estimated cost to goal from this node
+	float cost = 0;
+
+	int hash[3][3][3];
+	HashRC(nodeGoal.RC, hash);
+
+	//					F    U    B   L    D    R
+	int centers[6] = { 211, 101, 11, 110, 121, 112 };
+	int edges[12] = { 1, 21, 100, 102, 120, 122, 201, 221, 10, 12, 210, 212 };
+	int edgesUD[4] = { 10, 12, 210, 212 }; // Middle layer edges
+	int zyx = 0;
+
+	float orientationCost = 0;
+	for (int edge : edges)
+	{
+		int id = hash[edge / 100][edge / 10 % 10][edge % 10];
+
+		// Checking for Orientation
+		if (id % 10 == hash[1][1][0] % 10 || id % 10 == hash[1][1][2] % 10) orientationCost += 1; // Bad orientation!
+		if (id % 10 == hash[2][1][1] % 10 || id % 10 == hash[0][1][1] % 10)
+		{ // Questionable Orientation, checking second color's
+			if (id / 10 % 10 == hash[1][0][1] || id / 10 % 10 == hash[1][2][1]) orientationCost += 2; //Bad orientation!
+		}
+	}
+
+	return cost + orientationCost;
+}
+
+void PuzzleState::SumCost_EdgeOrient(PuzzleState& nodeGoal, PuzzleState nodeParent)
+{
+	nodeGoal.g = nodeParent.g + 1;
+	nodeGoal.h = GoalDistanceEstimate_EdgeOrient(nodeGoal);
+	nodeGoal.f = g + h;
+}
+
+float PuzzleState::GoalDistanceEstimate_CornerOrient(PuzzleState& nodeGoal)
+{
+	// Return the estimated cost to goal from this node
+	float cost = 0;
+
+	int hash[3][3][3];
+	HashRC(nodeGoal.RC, hash);
+
+	//					F    U    B   L    D    R
+	int centers[6] = { 211, 101, 11, 110, 121, 112 };
+	int corners[8] = { 0, 2, 20, 22, 200, 202, 220, 222 };
+	int zyx = 0;
+
+	float orientationCost = 0;
+	for (int corner : corners)
+	{
+		int id = hash[corner / 100][corner / 10 % 10][corner % 10];
+		DesiredCoords(hash, id, zyx);
+
+		if (id % 10 != hash[1][0][1] % 10 && id % 10 != hash[1][2][1] % 10)
+		{
+			float calc = abs(float(corner / 100) - float(zyx / 100)) + abs(float(corner / 10 % 10) - float(zyx / 10 % 10)) + abs(float(corner % 10) - float(zyx % 10));
+			float distOrient = 0;
+
+			int p = 1;
+			for (int i = 0; i < 3; i++)
+			{
+				if (id / p % 10 == hash[1][0][1]%10)
+				{
+					f = Up;
+					break;
+				}
+				if (id / p % 10 == hash[1][2][1] % 10)
+				{
+					f = Bottom;
+					break;
+				}
+				p *= 10;
+			}
+
+			switch (distCenter(f, id / 1000 / p % 10))
+			{
+			case 0: break; // The color is positioned properly
+			case 1:
+				if (calc == 0) distOrient += 2;
+				else distOrient += 3;
+				break;
+			case 2:
+				distOrient += 3;
+				break;
+			}
+	
+			cost += distOrient / 4.0f;
+
+			//orientationCost++;
+		}
+	}
+
+	return cost + orientationCost;
+}
+
+void PuzzleState::SumCost_CornerOrient(PuzzleState& nodeGoal, PuzzleState nodeParent)
+{
+	nodeGoal.g = nodeParent.g + 1.0f;
+	nodeGoal.h = GoalDistanceEstimate_CornerOrient(nodeGoal);
+	nodeGoal.f = g + h;
+}
+
+float PuzzleState::GoalDistanceEstimate_EdgeUDPosition(PuzzleState& nodeGoal)
+{
+	// Return the estimated cost to goal from this node
+	float cost = 0;
+
+	int hash[3][3][3];
+	HashRC(nodeGoal.RC, hash);
+
+	int centers[6] = { 211, 101, 11, 110, 121, 112 };
+	int edges[12] = { 1, 21, 100, 102, 120, 122, 201, 221, 10, 12, 210, 212 };
+	int edgesUD[4] = { 10, 12, 210, 212 }; // Middle layer edges
+	int zyx = 0;
+
+	float placementEdgesUD = 0;
+	for (int edge : edges)
+	{
+		int id = hash[edge / 100][edge / 10 % 10][edge % 10];
+		DesiredCoords(hash, id, zyx);
+
+		int isEdgeUD = 0;
+		for (int eUD : edgesUD)
+		{
+			if (zyx == eUD)
+			{
+				isEdgeUD = 1;
+				if (edge == eUD) isEdgeUD = 2; // The edge is already in middle layer/UD slice
+			}
+		}
+
+		if (isEdgeUD == 1)
+		{
+			float calc = abs(float(edge / 100) - float(zyx / 100)) + abs(float(edge / 10 % 10) - float(zyx / 10 % 10)) + abs(float(edge % 10) - float(zyx % 10));
+			int p = 1; float distOrient = 0;
+				// Check for orientation on every color
+				for (int i = 0; i < 2; i++)
+				{
+					int f = 0;
+					for (int i = 0; i < 6; i++)
+					{
+						if (id / p % 10 == hash[centers[i] / 100][centers[i] / 10 % 10][centers[i] % 10] % 10)
+						{
+							f = i;
+							break;
+						}
+					}
+
+					switch (distCenter(f, id / 1000 / p % 10))
+					{
+					case 0: break; // The color is positioned properly
+					case 1:
+						switch ((int)calc)
+						{
+						case 0:
+							distOrient += 3;
+							break;
+						case 2: // It means that our correct position is just across the face
+							if (zyx / 100 == edge / 100 && zyx / 10 % 10 == edge / 10 % 10 || zyx / 10 % 10 == edge / 10 % 10 && zyx % 10 == edge % 10)
+								distOrient += 3; //Our correct position is at the opposite side of the face
+							else distOrient += 2; // Our correct position is adjancent
+							break;
+						case 4:
+							distOrient += 2;
+							break;
+						}
+						break;
+					case 2:
+						if (zyx / 100 == edge / 100 && zyx / 10 % 10 == edge / 10 % 10 || zyx / 10 % 10 == edge / 10 % 10 && zyx % 10 == edge % 10)
+							distOrient += 2;
+						else distOrient += 3; // Our correct position is adjancent on the opposite side of the cube
+						break;
+					}
+
+					p *= 10;
+				}
+				placementEdgesUD += distOrient / 4.0f;
+		}
+	}
+
+	return cost + placementEdgesUD;
+}
+
+void PuzzleState::SumCost_EdgeUDPosition(PuzzleState& nodeGoal, PuzzleState nodeParent)
+{
+	nodeGoal.g = nodeParent.g + 1.0f;
+	nodeGoal.h = GoalDistanceEstimate_EdgeUDPosition(nodeGoal);
+	nodeGoal.f = g + h;
 }
 
 float PuzzleState::GoalDistanceEstimate(PuzzleState& nodeGoal)
 {
-	// Returns the cost that is the sum of moves for pieces to be positioned properly plus the orientation
-
 	// Return the estimated cost to goal from this node
 	float cost = 0;
 
@@ -614,6 +822,7 @@ float PuzzleState::GoalDistanceEstimate(PuzzleState& nodeGoal)
 			newGoal.rc[f][i / 3][i % 3] = nodeGoal.RC.rc[f][1][1];
 		}
 	}
+
 	HashRC(newGoal, goal_hash);
 	HashRC(nodeGoal.RC, hash);
 
@@ -623,15 +832,6 @@ float PuzzleState::GoalDistanceEstimate(PuzzleState& nodeGoal)
 	int corners[8] = { 0, 2, 20, 22, 200, 202, 220, 222 };
 	int edges[12] = { 1, 10, 12, 21, 100, 102, 120, 122, 201, 210, 212, 221 };
 	int zyx = 0;
-
-	/*The obvious heuristic for Rubik's Cube is a three dimensional version of the Manhattan distance.
-		For each cubie, compute the minimum number of moves required to correctly position and orient it,
-		and sum these values over all cubies.Unfortunately, to be admissible, this value has to be divided by 8,
-		since every twist moves 8 cubies. A better heuristic is to take the maximum of the sum of Manhattan distances
-		of the corner cubies, divided by four, and the maximum of the sum of edge cubies divided by 4.
-		The expected value of the Manhattan distance of the edge cubies is 22/4=5.5, while the corresponding
-		values for the corner cubies is 12.333/4 that's approximately equal to 3.08 partly
-		because there are 12 edge cubies, but only eight corner cubes.*/
 
 	for (int corner : corners)
 	{
@@ -660,7 +860,7 @@ float PuzzleState::GoalDistanceEstimate(PuzzleState& nodeGoal)
 			{
 			case 0: break; // The color is positioned properly
 			case 1:
-				if (calc == 0 || calc == 4) distOrient += 2;
+				if (calc == 0) distOrient += 2;
 				else distOrient += 3;
 				break;
 			case 2:
@@ -670,10 +870,10 @@ float PuzzleState::GoalDistanceEstimate(PuzzleState& nodeGoal)
 
 			p *= 10;
 		}
-		cost += distOrient / 8.0f;
+		//cost += distOrient / 12.0f;
+		cost += calc / 4.0f;
 	}
 
-	float maxDistEdge = 0;
 	for (int edge : edges)
 	{
 		DesiredCoords(hash, hash[edge / 100][edge / 10 % 10][edge % 10], zyx);
@@ -724,76 +924,19 @@ float PuzzleState::GoalDistanceEstimate(PuzzleState& nodeGoal)
 
 			p *= 10;
 		}
-		cost += distOrient / 8.0f;
-
+		//cost += distOrient / 8.0f;
+		cost += calc / 4.0f;
 	}
-
 	return cost;
 }
 
-bool PuzzleState::IsGoal(PuzzleState& nodeGoal)
-{
-	int hash[3][3][3], goal_hash[3][3][3];
-	RubikCube newGoal;
-
-	// Creating the corect result from a persective point (accounting for color placement)
-	for (int f = 0; f < 6; f++)
-	{
-		for (int i = 0; i < 9; i++)
-		{
-			newGoal.rc[f][i / 3][i % 3] = nodeGoal.RC.rc[f][1][1];
-		}
-	}
-
-	HashRC(nodeGoal.RC, hash);
-	HashRC(newGoal, goal_hash);
-
-	for (int z = 0; z < 3; z++)
-		for (int y = 0; y < 3; y++)
-			for (int x = 0; x < 3; x++)
-				if (hash[z][y][x] != goal_hash[z][y][x]) return false;
-
-	return true;
-}
-
 void PuzzleState::SumCost(PuzzleState& nodeGoal, PuzzleState nodeParent)
 {
-	nodeGoal.g = nodeParent.g + 1.0f;
+	nodeGoal.g = nodeParent.g + 1;
 	nodeGoal.h = GoalDistanceEstimate(nodeGoal);
 	nodeGoal.f = g + h;
 }
 
-float PuzzleState::CA_GoalDistEst(PuzzleState& nodeGoal)
-{
-	// Return the estimated cost to goal from this node
-	float cost = 0;
-
-	int hash[3][3][3], goal_hash[3][3][3];
-	RubikCube newGoal;
-
-	// Creating the corect result from a persective point (accounting for color placement)
-	for (int f = 0; f < 6; f++)
-	{
-		for (int i = 0; i < 9; i++)
-		{
-			newGoal.rc[f][i / 3][i % 3] = nodeGoal.RC.rc[f][1][1];
-		}
-	}
-	HashRC(newGoal, goal_hash);
-	HashRC(nodeGoal.RC, hash);
-
-void PuzzleState::SumCost(PuzzleState& nodeGoal, PuzzleState nodeParent)
-{
-	float nodeincrease, erosion;
-
-	nodeincrease = 2.4f - 0.4f * nodeGoal.moves.size();
-	if (nodeincrease < 1.2f) nodeincrease = 1.2f;
-
-
-	nodeGoal.g = nodeParent.g + nodeincrease;
-	nodeGoal.h = GoalDistanceEstimate(nodeGoal);
-	nodeGoal.f = g + h;
-}
 
 
 

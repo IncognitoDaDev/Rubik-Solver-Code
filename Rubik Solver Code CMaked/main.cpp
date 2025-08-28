@@ -263,9 +263,8 @@ int main()
                 startNode.RC.copyRC(startNode.RC.rc, RC.rc);
                 for(int i = 0; i < 6; i++) startNode.RC.dir[i] = RC.dir[i];
 
-                startNode.f = startNode.GoalDistanceEstimate(startNode);
-                aStarSearch.clopen.push_back(startNode);
-                aStarSearch.Algorithm();
+                aStarSearch.Algorithm(startNode);
+                RC = startNode.RC;
                 
                 cout << endl;
                 break;

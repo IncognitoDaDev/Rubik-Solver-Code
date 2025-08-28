@@ -26,8 +26,18 @@ public:
 	void copyMoves(PuzzleState& rhs);
 	std::string returnSolution();
 
+	float GoalDistanceEstimate_EdgeOrient(PuzzleState& nodeGoal);
+	void SumCost_EdgeOrient(PuzzleState& nodeGoal, PuzzleState nodeParent);
+
+	float GoalDistanceEstimate_CornerOrient(PuzzleState& nodeGoal);
+	void SumCost_CornerOrient(PuzzleState& nodeGoal, PuzzleState nodeParent);
+
+	float GoalDistanceEstimate_EdgeUDPosition(PuzzleState& nodeGoal);
+	void SumCost_EdgeUDPosition(PuzzleState& nodeGoal, PuzzleState nodeParent);
+
 	float GoalDistanceEstimate(PuzzleState& nodeGoal);
-	bool IsGoal(PuzzleState& nodeGoal);
 	void SumCost(PuzzleState& nodeGoal, PuzzleState nodeParent);
+
+	bool IsGoal(PuzzleState& nodeGoal);
 };
 
