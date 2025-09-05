@@ -36,20 +36,8 @@ int PuzzleState::HashPiece(int typeOfPiece, int colors)
 	return typeOfPiece * 1000 + colors;
 }
 
-int PuzzleState::PieceID(RubikCube& nodeGoal, int typeOfPiece, int* coords)
-{
-	int ID = 0, p = 1;
-	for (int i = 0; i < typeOfPiece + 1; i++)
-	{
-		ID += nodeGoal.rc[nodeGoal.dir[coords[i] / 100]][coords[i] / 10 % 10][coords[i] % 10] * p;
-		p *= 10;
-	}
-
-	return ID;
-}
-
 // We are hashing the Rubik Cube into a properly 3D Matrix where edges gain two digits and corners three digits (Front/Back -> Up/Bottom -> Right/Left)
-void PuzzleState::HashRC(RubikCube& nodeGoal, int(&hash)[3][3][3])
+void PuzzleState::HashRC(RubikCube& RC, int(&hash)[3][3][3])
 {
 	/*//for (int z = 0; z < 3; z++)
 	//	for (int y = 0; y < 3; y++)
@@ -114,86 +102,66 @@ void PuzzleState::HashRC(RubikCube& nodeGoal, int(&hash)[3][3][3])
 	//		} */
 
 	int colorID[3];
-	hash[1][1][1] = -1; // Free Space!
+	hash[1][1][1] = 777; // Free Space!
 
 	//Front ------
-	colorID[0] = Front * 100 + 11;
-	hash[2][1][1] = HashPiece(Center, PieceID(nodeGoal, Center, colorID));
+	//colorID[0] = Front * 100 + 11;
+	hash[2][1][1] = HashPiece(Center, RC.rc[Front][1][1]);
 
 	// Corners
-	colorID[0] = Front * 100 + 0; colorID[1] = Up * 100 + 20; colorID[2] = Left * 100 + 2;
-	hash[2][0][0] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
-	colorID[0] = Front * 100 + 2; colorID[1] = Up * 100 + 22; colorID[2] = Right * 100 + 0;
-	hash[2][0][2] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
-	colorID[0] = Front * 100 + 20; colorID[1] = Bottom * 100 + 0; colorID[2] = Left * 100 + 22;
-	hash[2][2][0] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
-	colorID[0] = Front * 100 + 22; colorID[1] = Bottom * 100 + 2; colorID[2] = Right * 100 + 20;
-	hash[2][2][2] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
+	hash[2][0][0] = HashPiece(Corner, RC.rc[Front][0][0] + RC.rc[Up][2][0] * 10 + RC.rc[Left][0][2] * 100);
+	hash[2][0][2] = HashPiece(Corner, RC.rc[Front][0][2] + RC.rc[Up][2][2] * 10 + RC.rc[Right][0][0] * 100);
 
-	// Edge   
-	colorID[0] = Front * 100 + 1; colorID[1] = Up * 100 + 21;
-	hash[2][0][1] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
-	colorID[0] = Front * 100 + 12; colorID[1] = Right * 100 + 10;
-	hash[2][1][2] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
-	colorID[0] = Front * 100 + 21; colorID[1] = Bottom * 100 + 1;
-	hash[2][2][1] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
-	colorID[0] = Front * 100 + 10; colorID[1] = Left * 100 + 12;
-	hash[2][1][0] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
+	hash[2][2][0] = HashPiece(Corner, RC.rc[Front][2][0] + RC.rc[Bottom][0][0] * 10 + RC.rc[Left][2][2] * 100);
+	hash[2][2][2] = HashPiece(Corner, RC.rc[Front][2][2] + RC.rc[Bottom][0][2] * 10 + RC.rc[Right][2][0] * 100);
+
+	// Edge
+	hash[2][0][1] = HashPiece(Edge, RC.rc[Front][0][1] + RC.rc[Up][2][1] * 10);
+	hash[2][2][1] = HashPiece(Edge, RC.rc[Front][2][1] + RC.rc[Bottom][0][1] * 10);
+
+	hash[2][1][2] = HashPiece(Edge, RC.rc[Front][1][2] + RC.rc[Right][1][0] * 10);
+	hash[2][1][0] = HashPiece(Edge, RC.rc[Front][1][0] + RC.rc[Left][1][2] * 10);
 
 
 	//Back ------
 	colorID[0] = Back * 100 + 11;
-	hash[0][1][1] = HashPiece(Center, PieceID(nodeGoal, Center, colorID));
+	hash[0][1][1] = HashPiece(Center, RC.rc[Back][1][1]);
 
 	// Corners
-	colorID[0] = Back * 100 + 2; colorID[1] = Up * 100 + 0; colorID[2] = Left * 100 + 0;
-	hash[0][0][0] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
-	colorID[0] = Back * 100 + 0; colorID[1] = Up * 100 + 2; colorID[2] = Right * 100 + 2;
-	hash[0][0][2] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
-	colorID[0] = Back * 100 + 22; colorID[1] = Bottom * 100 + 20; colorID[2] = Left * 100 + 20;
-	hash[0][2][0] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
-	colorID[0] = Back * 100 + 20; colorID[1] = Bottom * 100 + 22; colorID[2] = Right * 100 + 22;
-	hash[0][2][2] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
+	hash[0][0][0] = HashPiece(Corner, RC.rc[Back][0][2] + RC.rc[Up][0][0] * 10 + RC.rc[Left][0][0] * 100);
+	hash[0][0][2] = HashPiece(Corner, RC.rc[Back][0][0] + RC.rc[Up][0][2] * 10 + RC.rc[Right][0][2] * 100);
+
+	hash[0][2][0] = HashPiece(Corner, RC.rc[Back][2][2] + RC.rc[Bottom][2][0] * 10 + RC.rc[Left][2][0] * 100);
+	hash[0][2][2] = HashPiece(Corner, RC.rc[Back][2][0] + RC.rc[Bottom][2][2] * 10 + RC.rc[Right][2][2] * 100);
 
 	// Edges
-	colorID[0] = Back * 100 + 1; colorID[1] = Up * 100 + 1;
-	hash[0][0][1] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
-	colorID[0] = Back * 100 + 10; colorID[1] = Right * 100 + 12;
-	hash[0][1][2] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
-	colorID[0] = Back * 100 + 21; colorID[1] = Bottom * 100 + 21;
-	hash[0][2][1] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
-	colorID[0] = Back * 100 + 12; colorID[1] = Left * 100 + 10;
-	hash[0][1][0] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
+	hash[0][0][1] = HashPiece(Edge, RC.rc[Back][0][1] + RC.rc[Up][0][1] * 10);
+	hash[0][2][1] = HashPiece(Edge, RC.rc[Back][2][1] + RC.rc[Bottom][2][1] * 10);
+
+	hash[0][1][2] = HashPiece(Edge, RC.rc[Back][1][0] + RC.rc[Right][1][2] * 10);
+	hash[0][1][0] = HashPiece(Edge, RC.rc[Back][1][2] + RC.rc[Left][1][0] * 10);
 
 
 	// Right ------
-	colorID[0] = Right * 100 + 11;
-	hash[1][1][2] = HashPiece(Center, PieceID(nodeGoal, Center, colorID));
+	hash[1][1][2] = HashPiece(Center, RC.rc[Right][1][1]);
 
 	// Edges
-	colorID[0] = Right * 100 + 1; colorID[1] = Up * 100 + 12;
-	hash[1][0][2] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
-	colorID[0] = Right * 100 + 21; colorID[1] = Bottom * 100 + 12;
-	hash[1][2][2] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
+	hash[1][0][2] = HashPiece(Edge, RC.rc[Right][0][1] + RC.rc[Up][1][2] * 10);
+	hash[1][2][2] = HashPiece(Edge, RC.rc[Right][2][1] + RC.rc[Bottom][1][2] * 10);
 
 
 	// Left ------
-	colorID[0] = Left * 100 + 11;
-	hash[1][1][0] = HashPiece(Center, PieceID(nodeGoal, Center, colorID));
+	hash[1][1][0] = HashPiece(Center, RC.rc[Left][1][1]);
 
 	// Edges
-	colorID[0] = Left * 100 + 1; colorID[1] = Up * 100 + 10;
-	hash[1][0][0] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
-	colorID[0] = Left * 100 + 21; colorID[1] = Bottom * 100 + 10;
-	hash[1][2][0] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
+	hash[1][0][0] = HashPiece(Edge, RC.rc[Left][0][1] + RC.rc[Up][1][0] * 10);
+	hash[1][2][0] = HashPiece(Edge, RC.rc[Left][2][1] + RC.rc[Bottom][1][0] * 10);
 
 	// Up ------
-	colorID[0] = Up * 100 + 11;
-	hash[1][0][1] = HashPiece(Center, PieceID(nodeGoal, Center, colorID));
+	hash[1][0][1] = HashPiece(Center, RC.rc[Up][1][1]);
 
 	// Bottom ------
-	colorID[0] = Bottom * 100 + 11;
-	hash[1][2][1] = HashPiece(Center, PieceID(nodeGoal, Center, colorID));
+	hash[1][2][1] = HashPiece(Center, RC.rc[Bottom][1][1]);
 }
 
 void PuzzleState::DehashRC(int(&hash)[3][3][3], int(&rc)[6][3][3])
@@ -629,65 +597,70 @@ int PuzzleState::GoalDistanceEstimate_G1(RubikCube node, int stage)
 	switch (stage)
 	{
 	case 0: // Edge orientation
-		//for (int edge : edges)
-		//{
-		//	int id = hash[edge / 100][edge / 10 % 10][edge % 10];
-		//	DesiredCoords(hash, id, zyx);
+		for (int edge : edges)
+		{
+			int id = hash[edge / 100][edge / 10 % 10][edge % 10];
+			DesiredCoords(hash, id, zyx);
 
-		//	// Checking for Orientation
-		//	if (id / 10 % 10 == hash[1][1][0] % 10 || id / 10 % 10 == hash[1][1][2] % 10) 
-		//		cost += abs(edge / 100 - zyx / 100) + abs(edge / 10 % 10 - zyx / 10 % 10) + abs(edge % 10 - zyx % 10) + 1;; // Bad orientation!
-		//	if (id / 10 % 10 == hash[2][1][1] % 10 || id / 10 % 10 == hash[0][1][1] % 10)
-		//	{ // Questionable Orientation, checking second color's
-		//		if (id % 10 == hash[1][0][1] || id % 10 == hash[1][2][1]) 
-		//			cost += abs(edge / 100 - zyx / 100) + abs(edge / 10 % 10 - zyx / 10 % 10) + abs(edge % 10 - zyx % 10) + 1; //Bad orientation!
-		//	}
-		//}
-
-		//for (int edge : edgesUD)
-		//{
-		//	int id = hash[edge / 100][edge / 10 % 10][edge % 10];
-
-		//	// Checking for Orientation
-		//	if (id % 10 == hash[1][1][0] % 10 || id % 10 == hash[1][1][2] % 10) 
-		//		cost += abs(edge / 100 - zyx / 100) + abs(edge / 10 % 10 - zyx / 10 % 10) + abs(edge % 10 - zyx % 10) + 1; // Bad orientation!
-		//	if (id % 10 == hash[2][1][1] % 10 || id % 10 == hash[0][1][1] % 10)
-		//	{ // Questionable Orientation, checking second color's
-		//		if (id / 10 % 10 == hash[1][0][1] || id / 10 % 10 == hash[1][2][1]) 
-		//			cost += abs(edge / 100 - zyx / 100) + abs(edge / 10 % 10 - zyx / 10 % 10) + abs(edge % 10 - zyx % 10) + 1; //Bad orientation!
-		//	}
-		//}
-
-		for (int y = 0; y < 3; y++)
-			for (int x = 0; x < 3; x++)
-			{
-				if (!(node.rc[Up][y][x] == node.rc[Up][1][1] || node.rc[Up][y][x] == node.rc[Bottom][1][1]))
-				{
-					int id = hash[y][0][x];
-					DesiredCoords(hash, id, zyx);
-
-					cost += 1;
-				}
-
-				if (!(node.rc[Bottom][y][x] == node.rc[Bottom][1][1] || node.rc[Bottom][y][x] == node.rc[Up][1][1]))
-				{
-					int id = hash[2 - y][2][x];
-					DesiredCoords(hash, id, zyx);
-
-					cost += 1;
-				}
+			// Checking for Orientation
+			if (id / 10 % 10 == hash[1][1][0] % 10 || id / 10 % 10 == hash[1][1][2] % 10) 
+				cost += abs(edge / 100 - zyx / 100) + abs(edge / 10 % 10 - zyx / 10 % 10) + abs(edge % 10 - zyx % 10) + 1;; // Bad orientation!
+			if (id / 10 % 10 == hash[2][1][1] % 10 || id / 10 % 10 == hash[0][1][1] % 10)
+			{ // Questionable Orientation, checking second color's
+				if (id % 10 == hash[1][0][1] || id % 10 == hash[1][2][1]) 
+					cost += abs(edge / 100 - zyx / 100) + abs(edge / 10 % 10 - zyx / 10 % 10) + abs(edge % 10 - zyx % 10) + 1; //Bad orientation!
 			}
+		}
 
+		for (int edge : edgesUD)
+		{
+			int id = hash[edge / 100][edge / 10 % 10][edge % 10];
+
+			// Checking for Orientation
+			if (id % 10 == hash[1][1][0] % 10 || id % 10 == hash[1][1][2] % 10) 
+				cost += abs(edge / 100 - zyx / 100) + abs(edge / 10 % 10 - zyx / 10 % 10) + abs(edge % 10 - zyx % 10) + 1; // Bad orientation!
+			if (id % 10 == hash[2][1][1] % 10 || id % 10 == hash[0][1][1] % 10)
+			{ // Questionable Orientation, checking second color's
+				if (id / 10 % 10 == hash[1][0][1] || id / 10 % 10 == hash[1][2][1]) 
+					cost += abs(edge / 100 - zyx / 100) + abs(edge / 10 % 10 - zyx / 10 % 10) + abs(edge % 10 - zyx % 10) + 1; //Bad orientation!
+			}
+		}
 		break;
 
 	case 1: // Corner & eUD
 		// Corner orientation
-		for (int y = 0; y < 3; y++)
-			for (int x = 0; x < 3; x++)
+		for(int i = 0; i < 9; i += 2)
 			{
-				if (!(node.rc[Up][y][x] == node.rc[Up][1][1] || node.rc[Up][y][x] == node.rc[Bottom][1][1]))
-					cost += 5;
+			if (!(node.rc[Up][i/3][i%3] == node.rc[Up][1][1] || node.rc[Up][i/3][i%3] == node.rc[Bottom][1][1]))
+				{
+					int id = hash[i/3][0][i%3];
+					DesiredCoords(hash, id, zyx);
+
+					cost += abs(i/3 - zyx / 100) + abs(0 - zyx / 10 % 10) + abs(i%3 - zyx % 10) + 1;
+				}
+
+				if (!(node.rc[Bottom][i/3][i%3] == node.rc[Bottom][1][1] || node.rc[Bottom][i/3][i%3] == node.rc[Up][1][1]))
+				{
+					int id = hash[2 - i/3][2][i%3];
+					DesiredCoords(hash, id, zyx);
+
+					cost += abs(2 - i/3 - zyx / 100) + abs(2 - zyx / 10 % 10) + abs(i%3 - zyx % 10) + 1;
+				}
 			}
+
+		for (int edge : edgesUD)
+		{
+			int id = hash[edge / 100][edge / 10 % 10][edge % 10];
+
+			// Checking for Orientation
+			if (id % 10 == hash[1][1][0] % 10 || id % 10 == hash[1][1][2] % 10)
+				cost += abs(edge / 100 - zyx / 100) + abs(edge / 10 % 10 - zyx / 10 % 10) + abs(edge % 10 - zyx % 10) + 1; // Bad orientation!
+			if (id % 10 == hash[2][1][1] % 10 || id % 10 == hash[0][1][1] % 10)
+			{ // Questionable Orientation, checking second color's
+				if (id / 10 % 10 == hash[1][0][1] || id / 10 % 10 == hash[1][2][1])
+					cost += abs(edge / 100 - zyx / 100) + abs(edge / 10 % 10 - zyx / 10 % 10) + abs(edge % 10 - zyx % 10) + 1; //Bad orientation!
+			}
+		}
 
 
 
@@ -732,7 +705,7 @@ int PuzzleState::GoalDistanceEstimate_Solve(RubikCube node)
 	// Return the estimated cost to goal from this node
 	int cost = 0;
 
-	int hash[3][3][3];
+	/*int hash[3][3][3];
 	HashRC(node, hash);
 
 	int cubies[20] = { 0, 2, 20, 22, 200, 202, 220, 222, 1, 10, 12, 21, 100, 102, 120, 122, 201, 210, 212, 221 };
@@ -745,7 +718,15 @@ int PuzzleState::GoalDistanceEstimate_Solve(RubikCube node)
 
 		int calc = abs(cube / 100 - zyx / 100) + abs(cube / 10 % 10 - zyx / 10 % 10) + abs(cube % 10 - zyx % 10);
 
-		cost += calc * 2;
+		cost += calc;
+	}*/
+
+	for (int f = 0; f < 6; f++)
+	{
+		for (int i = 0; i < 9; i++)
+		{
+			if (node.rc[f][i / 3][i % 3] != node.rc[f][1][1]) cost += 1;
+		}
 	}
 
 	return cost;

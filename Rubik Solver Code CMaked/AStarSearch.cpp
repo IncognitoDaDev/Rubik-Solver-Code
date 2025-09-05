@@ -82,7 +82,8 @@ vector<int> AStarSearch::GetSuccessors_G1(vector<int> path, int state)
 	{
 		for (int i = 0; i < 12; i++)
 		{
-			if (i == 2 || i == 8 || i == 3 || i == 9 || i == 12 || i == 13) continue;
+			for (int ignore : {2, 3, 8, 9, 12, 13})
+				if (ignore == i) continue;
 
 			if (path.size() > 0 &&
 				(path[path.size() - 1] < 6 && path[path.size() - 1] + 6 == i
@@ -104,16 +105,13 @@ vector<int> AStarSearch::GetSuccessors_Solve(vector<int> path)
 
 	for (int i = 0; i < 18; i++)
 	{
-		if (i < 1 || i == 6 || i == 7)
-		{
-			if (path.size() > 0 &&
-				(path[path.size() - 1] < 6 && path[path.size() - 1] + 6 == i
-					|| path[path.size() - 1] > 5 && path[path.size() - 1] - 6 == i)) continue;
-		}
-		else
-		{
-			if (path.size() > 0 && (path[path.size() - 1] == i)) continue;
-		}
+		//for (int ignore : {2, 3, 8, 9})
+		//	if (ignore == i) continue;
+
+		if (path.size() > 0 &&
+			(path[path.size() - 1] < 6 && path[path.size() - 1] + 6 == i
+				|| path[path.size() - 1] > 5 && path[path.size() - 1] - 6 == i
+				|| path[path.size() - 1] > 11 && path[path.size() - 1] == i)) continue;
 
 		PossibleMoves.push_back(i);
 	}
@@ -130,34 +128,36 @@ PuzzleState startCube;
 
 PuzzleState AStarSearch::SearchSolution(PuzzleState startNode)
 {
-	Timer t;
+	Timer t, total;
 	startCube = startNode;
 	vector<int> path;
 	char a[256] = "";
 
-	// PART 1 -----------------
-
-	int threshold = startCube.GoalDistanceEstimate_G1(startCube.RC, 0) + 1;
+	int threshold;
 	int nextThreshold;
 
-	while (true) // Orienting The Edges
-	{
-		nextThreshold = 0;
+	// PART 1 -----------------
 
-		bool found = DFS_EdgeOrient(0, path, threshold, nextThreshold, startCube.RC);
+	//threshold = startCube.GoalDistanceEstimate_G1(startCube.RC, 0) + 1;
 
-		if (found) break;
+	//while (true) // Orienting The Edges
+	//{
+	//	nextThreshold = 0;
 
-		threshold = nextThreshold;
+	//	bool found = DFS_EdgeOrient(0, path, threshold, nextThreshold, startCube.RC);
 
-		cout <<"Threshold has been updated: " << threshold <<" / " << t.elapsed()<<endl;
-		t.reset();
-	}
+	//	if (found) break;
 
-	returnMovesInChar(path, a);
-	startCube.RC.queueMove(startCube.RC, a);
-	startCube.RC.ReadRubik(startCube.RC.dir, startCube.RC.rc);
-	cout << endl << "Part 1 Solution: " << a << endl;
+	//	threshold = nextThreshold;
+
+	//	cout <<"Threshold has been updated: " << threshold <<" / " << t.elapsed()<<endl;
+	//	t.reset();
+	//}
+
+	//returnMovesInChar(path, a);
+	//startCube.RC.queueMove(startCube.RC, a);
+	//startCube.RC.ReadRubik(startCube.RC.dir, startCube.RC.rc);
+	//cout << endl << "Part 1 Solution: " << a << endl;
 
 	// PART 2 -----------------
 
@@ -178,10 +178,12 @@ PuzzleState AStarSearch::SearchSolution(PuzzleState startNode)
 		t.reset();
 	}
 
+	cout << endl;
 	returnMovesInChar(path, a);
 	startCube.RC.queueMove(startCube.RC, a);
 	startCube.RC.ReadRubik(startCube.RC.dir, startCube.RC.rc);
-	cout << endl << "Part 2 Solution: " << a << endl;
+	cout << endl << "Solution: " << a;
+	cout << endl << "Total time spent searching: " << total.elapsed() << endl;
 
 	return startCube;
 }
@@ -210,7 +212,7 @@ bool AStarSearch::DFS_EdgeOrient(int G, vector<int>& path, int threshold, int &n
 		returnMovesInChar({ nextMove }, a);
 		RC.queueMove(RC, a);
 
-		bool result = DFS_EdgeOrient(g + 5, path, threshold, nextThreshold, RC);
+		bool result = DFS_EdgeOrient(g + 10, path, threshold, nextThreshold, RC);
 		if (result == true) return result;
 
 		if (min > nextThreshold || min == -1) min = nextThreshold;
@@ -287,13 +289,13 @@ bool AStarSearch::DFS_Solve(int G, vector<int>& path, int threshold, int& nextTh
 		returnMovesInChar({ nextMove }, a);
 		RC.queueMove(RC, a);
 
-		bool result = DFS_Solve(g + 10, path, threshold, nextThreshold, RC);
+		bool result = DFS_Solve(g + 5, path, threshold, nextThreshold, RC);
 		if (result == true) return result;
 
 		if (min > nextThreshold || min == -1) min = nextThreshold;
 
 		if (nextMove > 11) returnMovesInChar({ nextMove }, a);
-		else  returnMovesInChar({ nextMove + (nextMove > 5 ? -6 : 6) }, a);
+		else returnMovesInChar({ nextMove + (nextMove > 5 ? -6 : 6) }, a);
 		RC.queueMove(RC, a);
 		path.pop_back();
 	}

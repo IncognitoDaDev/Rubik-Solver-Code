@@ -192,7 +192,7 @@ int main()
 
     while (RubikGame)
     {
-        char q[] = "B F D B F2 U' D2 F2 L' U2";
+        char q[] = "B F D B F2 U' D2";// F2 L' U2";
         int tempDir[6] = { 0, 1, 2 , 3, 4, 5 };
         char move;
         cout << endl << "Your move... ";
