@@ -54,6 +54,39 @@ std::string RubikCube::intTocharColorType(int n)
     }
 }
 
+void RubikCube::queueMove(RubikCube& RC, char* move)
+{
+    int nrc[6][3][3];
+    //string debugLog = "";
+
+    char oldMove;
+
+    for (int i = 0; i < strlen(move); i++)
+    {
+        // This might be a bit confusing so lets break it down first [insert_dance_emoji]
+        // This is a small side dish of code to interpreting what kind of moves
+        // We already have the move we want to execute,
+        // we just need to know if its a prime one or a double move or a simple move.
+        if (move[i] == ' ' || move[i] == 'NULL') continue;
+
+        if (move[i] == 39)
+        {
+            RC.actionRubik(RC.dir, RC.rc, oldMove, 1);
+            RC.actionRubik(RC.dir, RC.rc, oldMove, 1);
+        }
+        else if (move[i] == '2')
+        {
+            RC.actionRubik(RC.dir, RC.rc, oldMove, 0);
+        }
+        else
+        {
+            RC.actionRubik(RC.dir, RC.rc, move[i], 0);
+        }
+
+        oldMove = move[i];
+    }
+}
+
 void RubikCube::identifyFaces(int(&dir)[6])
 {
     switch (dir[Front])

@@ -11,16 +11,6 @@ using namespace cv;
 class Webcam
 {
 public:
-    enum Color
-    {
-        White = 0,
-        Blue = 1,
-        Yellow = 2,
-        Red = 3,
-        Green = 5,
-        Orange = 4
-    };
-
     static void drawSquares(Mat& image, const vector<vector<Point>>& squares);
     void translateFaceColor(Mat& frame, vector<vector<Point>> square, vector<int> colorType, int(&ma)[3][3]);
     static double angle(Point pt1, Point pt2, Point pt0);

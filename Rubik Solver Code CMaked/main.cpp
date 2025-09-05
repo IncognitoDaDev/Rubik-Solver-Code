@@ -43,39 +43,6 @@ void ResetSearch(AStarSearch astarsearch, PuzzleState startnode)
     startnode = PuzzleState();
 }
 
-void queueMove(RubikCube& RC, char move[])
-{
-    int nrc[6][3][3];
-    //string debugLog = "";
-
-    char oldMove;
-
-    for (int i = 0; i < strlen(move); i++)
-    {
-        // This might be a bit confusing so lets break it down first [insert_dance_emoji]
-        // This is a small side dish of code to interpreting what kind of moves
-        // We already have the move we want to execute,
-        // we just need to know if its a prime one or a double move or a simple move.
-        if (move[i] == ' ' || move[i] == 'NULL') continue;
-
-        if (move[i] == 39)
-        {
-            RC.actionRubik(RC.dir, RC.rc, oldMove, 1);
-            RC.actionRubik(RC.dir, RC.rc, oldMove, 1);
-        }
-        else if (move[i] == '2')
-        {
-            RC.actionRubik(RC.dir, RC.rc, oldMove, 0);
-        }
-        else
-        {
-            RC.actionRubik(RC.dir, RC.rc, move[i], 0);
-        }
-
-        oldMove = move[i];
-    }
-}
-
 int main()
 {
     int SquareCheck = 1, ColorCheck = 1, RubikGame = 1, FileInputOverride = 1;
@@ -225,7 +192,7 @@ int main()
 
     while (RubikGame)
     {
-        char q[] = "F2 U B2 F' U L R F'";
+        char q[] = "B F D B F2 U' D2 F2 L' U2";
         int tempDir[6] = { 0, 1, 2 , 3, 4, 5 };
         char move;
         cout << endl << "Your move... ";
@@ -254,7 +221,7 @@ int main()
 
             case '1': // Solve the Rubik Cube algorithmically (and spit out a line of RC notations as a solution)
                 cout << "Scrambling the cube in a predetermined format..." << endl;
-                queueMove(RC, q);
+                RC.queueMove(RC, q);
                 RC.ReadRubik(RC.dir, RC.rc);
 
                 ResetSearch(aStarSearch, startNode);
@@ -263,10 +230,20 @@ int main()
                 startNode.RC.copyRC(startNode.RC.rc, RC.rc);
                 for(int i = 0; i < 6; i++) startNode.RC.dir[i] = RC.dir[i];
 
-                startNode.f = startNode.GoalDistanceEstimate(startNode);
-                aStarSearch.clopen.push_back(startNode);
-                aStarSearch.Algorithm();
+                aStarSearch.Algorithm(startNode);
                 
+                cout << endl;
+                break;
+
+            case '3':
+                ResetSearch(aStarSearch, startNode);
+
+                cout << "Solving the cube..." << endl;
+                startNode.RC.copyRC(startNode.RC.rc, RC.rc);
+                for (int i = 0; i < 6; i++) startNode.RC.dir[i] = RC.dir[i];
+
+                aStarSearch.Algorithm(startNode);
+
                 cout << endl;
                 break;
 

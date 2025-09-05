@@ -31,9 +31,9 @@ enum Orientation
 	Bottom = 5
 };
 
-int PuzzleState::HashPiece(int typeOfPiece, int colors, int orientations)
+int PuzzleState::HashPiece(int typeOfPiece, int colors)
 {
-	return typeOfPiece * 1000000 + orientations * 1000 + colors;
+	return typeOfPiece * 1000 + colors;
 }
 
 int PuzzleState::PieceID(RubikCube& nodeGoal, int typeOfPiece, int* coords)
@@ -48,90 +48,152 @@ int PuzzleState::PieceID(RubikCube& nodeGoal, int typeOfPiece, int* coords)
 	return ID;
 }
 
-// We are hashing the Rubik Cube into a properly 3D Matrix where edges gain two digits and corners three digits (Front -> Up/Bottom -> Right/Left)
+// We are hashing the Rubik Cube into a properly 3D Matrix where edges gain two digits and corners three digits (Front/Back -> Up/Bottom -> Right/Left)
 void PuzzleState::HashRC(RubikCube& nodeGoal, int(&hash)[3][3][3])
 {
+	/*//for (int z = 0; z < 3; z++)
+	//	for (int y = 0; y < 3; y++)
+	//		for (int x = 0; x < 3; x++)
+	//		{
+	//			int type = 0;
+
+	//			if (z != 1)
+	//			{
+	//				hash[z][y][x] = nodeGoal.rc[(z > 1 ? Front : Back)][y][(z > 1 ? x : 2 - x)];
+
+	//				if (y == x && x == 1) continue; // Center cubie only needs one colour
+	//				type++;
+	//				// The cubie is an edge, so we add one more colour to it
+	//				if (y == 1)
+	//				{
+	//					if (x > 1) hash[z][y][x] += nodeGoal.rc[Right][y][2] * 10; // If its a Right
+	//					else hash[z][y][x] += nodeGoal.rc[Left][y][0] * 10; // Or Left
+	//					continue;
+	//				}
+	//				else if (x == 1)
+	//				{
+	//					if (y > 1) hash[z][y][x] += nodeGoal.rc[Up][0][x] * 10; // If its Up
+	//					else hash[z][y][x] += nodeGoal.rc[Bottom][2][x] * 10; // Or Bottom 
+	//					continue;
+	//				}
+
+	//				type++;
+	//				// The cubie is a corner, so we add two more colours to it
+	//				if (y > 1) hash[z][y][x] += nodeGoal.rc[Up][0][x] * 10; // If its Up
+	//				else hash[z][y][x] += nodeGoal.rc[Bottom][2][x] * 10; // Or Bottom 
+
+	//				if (x > 1) hash[z][y][x] += nodeGoal.rc[Right][y][2] * 100; // If its a Right
+	//				else hash[z][y][x] += nodeGoal.rc[Left][y][0] * 100; // Or Left
+	//			}
+	//			else
+	//			{
+	//				if (y == x && x == 1) continue;
+
+	//				if (y == 1 && x != 1) // Center Piece
+	//				{
+	//					if (x > 1) hash[z][y][x] += nodeGoal.rc[Right][y][2]; // If its a Right
+	//					else if (x < 1) hash[z][y][x] += nodeGoal.rc[Left][y][0]; // Or Left
+	//					continue;
+	//				}
+	//				else if (x == 1 && y != 1)
+	//				{
+	//					if (y > 1) hash[z][y][x] += nodeGoal.rc[Up][0][x]; // If its Up
+	//					else if (y < 1) hash[z][y][x] += nodeGoal.rc[Bottom][2][x]; // Or Bottom 
+	//					continue;
+	//				}
+
+	//				type++;
+	//				if (y > 1) hash[z][y][x] += nodeGoal.rc[Up][0][x]; // If its Up
+	//				else if (y < 1) hash[z][y][x] += nodeGoal.rc[Bottom][2][x]; // Or Bottom 
+
+	//				if (x > 1) hash[z][y][x] += nodeGoal.rc[Right][y][2] * 10; // If its a Right
+	//				else if (x < 1) hash[z][y][x] += nodeGoal.rc[Left][y][0] * 10; // Or Left
+	//			}
+
+	//			hash[z][y][x] = type * 1000; // Declaring what type of cubie it is (center, edge or corner?)
+	//		} */
+
 	int colorID[3];
 	hash[1][1][1] = -1; // Free Space!
 
 	//Front ------
 	colorID[0] = Front * 100 + 11;
-	hash[2][1][1] = HashPiece(Center, PieceID(nodeGoal, Center, colorID), Front);
+	hash[2][1][1] = HashPiece(Center, PieceID(nodeGoal, Center, colorID));
 
 	// Corners
 	colorID[0] = Front * 100 + 0; colorID[1] = Up * 100 + 20; colorID[2] = Left * 100 + 2;
-	hash[2][0][0] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID), 310);
+	hash[2][0][0] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
 	colorID[0] = Front * 100 + 2; colorID[1] = Up * 100 + 22; colorID[2] = Right * 100 + 0;
-	hash[2][0][2] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID), 410);
+	hash[2][0][2] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
 	colorID[0] = Front * 100 + 20; colorID[1] = Bottom * 100 + 0; colorID[2] = Left * 100 + 22;
-	hash[2][2][0] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID), 350);
+	hash[2][2][0] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
 	colorID[0] = Front * 100 + 22; colorID[1] = Bottom * 100 + 2; colorID[2] = Right * 100 + 20;
-	hash[2][2][2] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID), 450);
+	hash[2][2][2] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
 
 	// Edge   
 	colorID[0] = Front * 100 + 1; colorID[1] = Up * 100 + 21;
-	hash[2][0][1] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID), 10);
+	hash[2][0][1] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
 	colorID[0] = Front * 100 + 12; colorID[1] = Right * 100 + 10;
-	hash[2][1][2] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID), 40);
+	hash[2][1][2] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
 	colorID[0] = Front * 100 + 21; colorID[1] = Bottom * 100 + 1;
-	hash[2][2][1] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID), 50);
+	hash[2][2][1] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
 	colorID[0] = Front * 100 + 10; colorID[1] = Left * 100 + 12;
-	hash[2][1][0] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID), 30);
+	hash[2][1][0] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
 
 
 	//Back ------
 	colorID[0] = Back * 100 + 11;
-	hash[0][1][1] = HashPiece(Center, PieceID(nodeGoal, Center, colorID), Back);
+	hash[0][1][1] = HashPiece(Center, PieceID(nodeGoal, Center, colorID));
 
 	// Corners
 	colorID[0] = Back * 100 + 2; colorID[1] = Up * 100 + 0; colorID[2] = Left * 100 + 0;
-	hash[0][0][0] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID), 312);
+	hash[0][0][0] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
 	colorID[0] = Back * 100 + 0; colorID[1] = Up * 100 + 2; colorID[2] = Right * 100 + 2;
-	hash[0][0][2] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID), 412);
+	hash[0][0][2] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
 	colorID[0] = Back * 100 + 22; colorID[1] = Bottom * 100 + 20; colorID[2] = Left * 100 + 20;
-	hash[0][2][0] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID), 352);
+	hash[0][2][0] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
 	colorID[0] = Back * 100 + 20; colorID[1] = Bottom * 100 + 22; colorID[2] = Right * 100 + 22;
-	hash[0][2][2] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID), 452);
+	hash[0][2][2] = HashPiece(Corner, PieceID(nodeGoal, Corner, colorID));
 
 	// Edges
 	colorID[0] = Back * 100 + 1; colorID[1] = Up * 100 + 1;
-	hash[0][0][1] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID), 12);
+	hash[0][0][1] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
 	colorID[0] = Back * 100 + 10; colorID[1] = Right * 100 + 12;
-	hash[0][1][2] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID), 42);
+	hash[0][1][2] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
 	colorID[0] = Back * 100 + 21; colorID[1] = Bottom * 100 + 21;
-	hash[0][2][1] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID), 52);
+	hash[0][2][1] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
 	colorID[0] = Back * 100 + 12; colorID[1] = Left * 100 + 10;
-	hash[0][1][0] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID), 32);
+	hash[0][1][0] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
 
 
 	// Right ------
 	colorID[0] = Right * 100 + 11;
-	hash[1][1][2] = HashPiece(Center, PieceID(nodeGoal, Center, colorID), Right);
+	hash[1][1][2] = HashPiece(Center, PieceID(nodeGoal, Center, colorID));
 
 	// Edges
 	colorID[0] = Right * 100 + 1; colorID[1] = Up * 100 + 12;
-	hash[1][0][2] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID), 14);
+	hash[1][0][2] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
 	colorID[0] = Right * 100 + 21; colorID[1] = Bottom * 100 + 12;
-	hash[1][2][2] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID), 54);
+	hash[1][2][2] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
 
 
 	// Left ------
 	colorID[0] = Left * 100 + 11;
-	hash[1][1][0] = HashPiece(Center, PieceID(nodeGoal, Center, colorID), Left);
+	hash[1][1][0] = HashPiece(Center, PieceID(nodeGoal, Center, colorID));
 
 	// Edges
 	colorID[0] = Left * 100 + 1; colorID[1] = Up * 100 + 10;
-	hash[1][0][0] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID), 13);
+	hash[1][0][0] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
 	colorID[0] = Left * 100 + 21; colorID[1] = Bottom * 100 + 10;
-	hash[1][2][0] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID), 53);
+	hash[1][2][0] = HashPiece(Edge, PieceID(nodeGoal, Edge, colorID));
 
 	// Up ------
 	colorID[0] = Up * 100 + 11;
-	hash[1][0][1] = HashPiece(Center, PieceID(nodeGoal, Center, colorID), Up);
+	hash[1][0][1] = HashPiece(Center, PieceID(nodeGoal, Center, colorID));
 
 	// Bottom ------
 	colorID[0] = Bottom * 100 + 11;
-	hash[1][2][1] = HashPiece(Center, PieceID(nodeGoal, Center, colorID), Bottom);
+	hash[1][2][1] = HashPiece(Center, PieceID(nodeGoal, Center, colorID));
 }
 
 void PuzzleState::DehashRC(int(&hash)[3][3][3], int(&rc)[6][3][3])
@@ -197,7 +259,7 @@ void PuzzleState::DesiredCoords(int hash[3][3][3], int pieceID, int& zyx)
 	int faces[6] = { hash[2][1][1] % 10, hash[1][0][1] % 10, hash[0][1][1] % 10, hash[1][1][0] % 10, hash[1][1][2] % 10, hash[1][2][1] % 10 };
 	int color[3];
 
-	switch (pieceID / 1000000)
+	switch (pieceID / 1000)
 	{
 	case Edge:
 		for (int i = 0; i < 6; i++)
@@ -506,45 +568,6 @@ void PuzzleState::DesiredCoords(int hash[3][3][3], int pieceID, int& zyx)
 	}
 }
 
-void PuzzleState::DebugHash(int(&hash)[3][3][3])
-{
-	for (int i = 0; i < 3; i++)
-	{
-		std::cout << "\nZ: " << i << std::endl;
-		for (int j = 0; j < 9; j++)
-			std::cout << hash[i][j / 3][j % 3] << ((j + 1) % 3 == 0 ? "\n" : " ");
-	}
-}
-
-int PuzzleState::distCenter(int face, int pieceFace)
-{
-	if (pieceFace == face) return 0;
-
-	switch (pieceFace)
-	{
-	case Front:
-		if (face == Back) return 2;
-		break;
-	case Back:
-		if (face == Front) return 2;
-		break;
-	case Up:
-		if (face == Bottom) return 2;
-		break;
-	case Bottom:
-		if (face == Up) return 2;
-		break;
-	case Right:
-		if (face == Left) return 2;
-		break;
-	case Left:
-		if (face == Right) return 2;
-		break;
-	}
-
-	return 1;
-}
-
 bool PuzzleState::IsSameState(PuzzleState& rhs)
 {
 	int hash[3][3][3], rhs_hash[3][3][3];
@@ -557,12 +580,6 @@ bool PuzzleState::IsSameState(PuzzleState& rhs)
 				if (hash[z][y][x] != rhs_hash[z][y][x]) return false;
 
 	return true;
-}
-
-void PuzzleState::copyMoves(PuzzleState& rhs)
-{
-	for (int i = 0; i < rhs.moves.size(); i++)
-		moves.push_back(rhs.moves[i]);
 }
 
 std::string PuzzleState::returnSolution()
@@ -588,211 +605,169 @@ std::string PuzzleState::returnSolution()
 	return a;
 }
 
-float PuzzleState::GoalDistanceEstimate(PuzzleState& nodeGoal)
-{
-	for (int z = 0; z < 3; z++)
-		for (int y = 0; y < 3; y++)
-			for (int x = 0; x < 3; x++)
-					hash[z][y][x] = rhs[z][y][x];
-}
 
-float PuzzleState::GoalDistanceEstimate(PuzzleState& nodeGoal)
-{
-	// Returns the cost that is the sum of moves for pieces to be positioned properly plus the orientation
+// What is a G1 state? Extending from Kociemba's definition, its a state where the rubik can be solved by using
+// only U D F2 B2 R2 L2 moves. Its a state where every cubie is oriented and edges in UD slice are in their slice.
+// Looking further into what makes a cubie an oriented cubie... I understood the logic behind it this way
+// Corner cubies should be facing Up/Down, matching the color of either face (Up/Down)
+// Edge cubies should be oriented as explained in ZZ guide, Eoline section
 
+int PuzzleState::GoalDistanceEstimate_G1(RubikCube node, int stage)
+{
 	// Return the estimated cost to goal from this node
-	float cost = 0;
-
-	int hash[3][3][3], goal_hash[3][3][3];
-	RubikCube newGoal;
-
-	// Creating the corect result from a persective point (accounting for color placement)
-	for (int f = 0; f < 6; f++)
-	{
-		for (int i = 0; i < 9; i++)
-		{
-			newGoal.rc[f][i / 3][i % 3] = nodeGoal.RC.rc[f][1][1];
-		}
-	}
-	HashRC(newGoal, goal_hash);
-	HashRC(nodeGoal.RC, hash);
-
-	//					F    U    B   L    D    R
-	int centers[6] = { 211, 101, 11, 110, 112, 121 };
+	int cost = 0;
 
 	int corners[8] = { 0, 2, 20, 22, 200, 202, 220, 222 };
-	int edges[12] = { 1, 10, 12, 21, 100, 102, 120, 122, 201, 210, 212, 221 };
+	int edges[8] = { 1, 100, 102, 201, 21, 120, 122, 221 }; // Bottom layer edges
+	int edgesUD[4] = { 10, 12, 210, 212 }; // Middle layer edges
+
 	int zyx = 0;
 
-	/*The obvious heuristic for Rubik's Cube is a three dimensional version of the Manhattan distance.
-		For each cubie, compute the minimum number of moves required to correctly position and orient it,
-		and sum these values over all cubies.Unfortunately, to be admissible, this value has to be divided by 8,
-		since every twist moves 8 cubies. A better heuristic is to take the maximum of the sum of Manhattan distances
-		of the corner cubies, divided by four, and the maximum of the sum of edge cubies divided by 4.
-		The expected value of the Manhattan distance of the edge cubies is 22/4=5.5, while the corresponding
-		values for the corner cubies is 12.333/4 that's approximately equal to 3.08 partly
-		because there are 12 edge cubies, but only eight corner cubes.*/
+	int hash[3][3][3];
+	HashRC(node, hash);
 
-	for (int corner : corners)
+	switch (stage)
 	{
-		DesiredCoords(hash, hash[corner / 100][corner / 10 % 10][corner % 10], zyx);
+	case 0: // Edge orientation
+		//for (int edge : edges)
+		//{
+		//	int id = hash[edge / 100][edge / 10 % 10][edge % 10];
+		//	DesiredCoords(hash, id, zyx);
 
-		int id = hash[corner / 100][corner / 10 % 10][corner % 10];
-		int	desiredid = goal_hash[zyx / 100][zyx / 10 % 10][zyx % 10];
+		//	// Checking for Orientation
+		//	if (id / 10 % 10 == hash[1][1][0] % 10 || id / 10 % 10 == hash[1][1][2] % 10) 
+		//		cost += abs(edge / 100 - zyx / 100) + abs(edge / 10 % 10 - zyx / 10 % 10) + abs(edge % 10 - zyx % 10) + 1;; // Bad orientation!
+		//	if (id / 10 % 10 == hash[2][1][1] % 10 || id / 10 % 10 == hash[0][1][1] % 10)
+		//	{ // Questionable Orientation, checking second color's
+		//		if (id % 10 == hash[1][0][1] || id % 10 == hash[1][2][1]) 
+		//			cost += abs(edge / 100 - zyx / 100) + abs(edge / 10 % 10 - zyx / 10 % 10) + abs(edge % 10 - zyx % 10) + 1; //Bad orientation!
+		//	}
+		//}
 
-		float calc = abs(float(corner / 100) - float(zyx / 100)) + abs(float(corner / 10 % 10) - float(zyx / 10 % 10)) + abs(float(corner % 10) - float(zyx % 10));
+		//for (int edge : edgesUD)
+		//{
+		//	int id = hash[edge / 100][edge / 10 % 10][edge % 10];
 
-		int p = 1; float distOrient = 0;
-		// Check for orientation on every color
-		for (int i = 0; i < 3; i++)
+		//	// Checking for Orientation
+		//	if (id % 10 == hash[1][1][0] % 10 || id % 10 == hash[1][1][2] % 10) 
+		//		cost += abs(edge / 100 - zyx / 100) + abs(edge / 10 % 10 - zyx / 10 % 10) + abs(edge % 10 - zyx % 10) + 1; // Bad orientation!
+		//	if (id % 10 == hash[2][1][1] % 10 || id % 10 == hash[0][1][1] % 10)
+		//	{ // Questionable Orientation, checking second color's
+		//		if (id / 10 % 10 == hash[1][0][1] || id / 10 % 10 == hash[1][2][1]) 
+		//			cost += abs(edge / 100 - zyx / 100) + abs(edge / 10 % 10 - zyx / 10 % 10) + abs(edge % 10 - zyx % 10) + 1; //Bad orientation!
+		//	}
+		//}
+
+		for (int y = 0; y < 3; y++)
+			for (int x = 0; x < 3; x++)
+			{
+				if (!(node.rc[Up][y][x] == node.rc[Up][1][1] || node.rc[Up][y][x] == node.rc[Bottom][1][1]))
+				{
+					int id = hash[y][0][x];
+					DesiredCoords(hash, id, zyx);
+
+					cost += 1;
+				}
+
+				if (!(node.rc[Bottom][y][x] == node.rc[Bottom][1][1] || node.rc[Bottom][y][x] == node.rc[Up][1][1]))
+				{
+					int id = hash[2 - y][2][x];
+					DesiredCoords(hash, id, zyx);
+
+					cost += 1;
+				}
+			}
+
+		break;
+
+	case 1: // Corner & eUD
+		// Corner orientation
+		for (int y = 0; y < 3; y++)
+			for (int x = 0; x < 3; x++)
+			{
+				if (!(node.rc[Up][y][x] == node.rc[Up][1][1] || node.rc[Up][y][x] == node.rc[Bottom][1][1]))
+					cost += 5;
+			}
+
+
+
+		//for (int corner : corners)
+		//{
+		//	int id = hash[corner / 100][corner / 10 % 10][corner % 10];
+		//	if ((id / 10 % 10 != hash[1][0][1] % 10) && (id / 10 % 10 != hash[1][2][1] % 10)) cost += 5;
+
+		//	//if (id % 10 != hash[1][0][1] % 10 && id % 10 != hash[1][2][1] % 10) cost += 5;
+		//}
+
+		//for (int edge : edgesUD)
+		//{
+
+		//}
+
+		/*int badEdge = 0;
+		for (int eUD : edgesUD)
 		{
-			int f = 0;
-			for (int i = 0; i < 6; i++)
+			int id = hash[eUD / 100][eUD / 10 % 10][eUD % 10];
+			DesiredCoords(hash, id, zyx);
+
+			int isEdge = 0;
+			for (int check : edgesUD)
 			{
-				if (id / p % 10 == hash[centers[i] / 100][centers[i] / 10 % 10][centers[i] % 10] % 10)
-				{
-					f = i;
-					break;
-				}
+				if (zyx == check) isEdge = 1;
 			}
 
-			switch (distCenter(f, id / 1000 / p % 10))
-			{
-			case 0: break; // The color is positioned properly
-			case 1:
-				if (calc == 0 || calc == 4) distOrient += 2;
-				else distOrient += 3;
-				break;
-			case 2:
-				distOrient += 3;
-				break;
-			}
-
-			p *= 10;
+			if (isEdge != 1) badEdge++;
 		}
-		cost += distOrient / 8.0f;
-	}
+		cost += badEdge * 5;*/
 
-	float maxDistEdge = 0;
-	for (int edge : edges)
-	{
-		DesiredCoords(hash, hash[edge / 100][edge / 10 % 10][edge % 10], zyx);
-		int id = hash[edge / 100][edge / 10 % 10][edge % 10];
-		int desiredid = goal_hash[zyx / 100][zyx / 10 % 10][zyx % 10];
-
-		float calc = abs(float(edge / 100) - float(zyx / 100)) + abs(float(edge / 10 % 10) - float(zyx / 10 % 10)) + abs(float(edge % 10) - float(zyx % 10));
-
-		int p = 1; float distOrient = 0;
-		// Check for orientation on every color
-		for (int i = 0; i < 2; i++)
-		{
-			int f = 0;
-			for (int i = 0; i < 6; i++)
-			{
-				if (id / p % 10 == hash[centers[i] / 100][centers[i] / 10 % 10][centers[i] % 10] % 10)
-				{
-					f = i;
-					break;
-				}
-			}
-
-			switch (distCenter(f, id / 1000 / p % 10))
-			{
-			case 0: break; // The color is positioned properly
-			case 1:
-				switch ((int)calc)
-				{
-				case 0:
-					distOrient += 3;
-					break;
-				case 2: // It means that our correct position is just across the face
-					if (zyx / 100 == edge / 100 && zyx / 10 % 10 == edge / 10 % 10 || zyx / 10 % 10 == edge / 10 % 10 && zyx % 10 == edge % 10)
-						distOrient += 3; //Our correct position is at the opposite side of the face
-					else distOrient += 2; // Our correct position is adjancent
-					break;
-				case 4:
-					distOrient += 2;
-					break;
-				}
-				break;
-			case 2:
-				if (zyx / 100 == edge / 100 && zyx / 10 % 10 == edge / 10 % 10 || zyx / 10 % 10 == edge / 10 % 10 && zyx % 10 == edge % 10)
-					distOrient += 2;
-				else distOrient += 3; // Our correct position is adjancent on the opposite side of the cube
-				break;
-			}
-
-			p *= 10;
-		}
-		cost += distOrient / 8.0f;
+		break;
 
 	}
 
 	return cost;
 }
 
-bool PuzzleState::IsGoal(PuzzleState& nodeGoal)
+int PuzzleState::GoalDistanceEstimate_Solve(RubikCube node)
 {
-	int hash[3][3][3], goal_hash[3][3][3];
-	RubikCube newGoal;
+	// Return the estimated cost to goal from this node
+	int cost = 0;
 
-	// Creating the corect result from a persective point (accounting for color placement)
-	for (int f = 0; f < 6; f++)
+	int hash[3][3][3];
+	HashRC(node, hash);
+
+	int cubies[20] = { 0, 2, 20, 22, 200, 202, 220, 222, 1, 10, 12, 21, 100, 102, 120, 122, 201, 210, 212, 221 };
+	int zyx = 0;
+
+	for (int cube : cubies)
 	{
-		for (int i = 0; i < 9; i++)
-		{
-			newGoal.rc[f][i / 3][i % 3] = nodeGoal.RC.rc[f][1][1];
-		}
+		int id = hash[cube / 100][cube / 10 % 10][cube % 10];
+		DesiredCoords(hash, id, zyx);
+
+		int calc = abs(cube / 100 - zyx / 100) + abs(cube / 10 % 10 - zyx / 10 % 10) + abs(cube % 10 - zyx % 10);
+
+		cost += calc * 2;
 	}
 
-	HashRC(nodeGoal.RC, hash);
-	HashRC(newGoal, goal_hash);
+	return cost;
+}
 
-	for (int z = 0; z < 3; z++)
+bool PuzzleState::IsGoal(RubikCube& RC)
+{
+	for (int f = 0; f < 6; f++)
+	{
 		for (int y = 0; y < 3; y++)
 			for (int x = 0; x < 3; x++)
-				if (hash[z][y][x] != goal_hash[z][y][x]) return false;
+				if (RC.rc[f][y][x] != RC.rc[f][1][1]) return false;
+	}
 
 	return true;
 }
 
-void PuzzleState::SumCost(PuzzleState& nodeGoal, PuzzleState nodeParent)
+void PuzzleState::SumCost(PuzzleState& node, int G)
 {
-	nodeGoal.g = nodeParent.g + 1.0f;
-	nodeGoal.h = GoalDistanceEstimate(nodeGoal);
-	nodeGoal.f = g + h;
-}
-
-float PuzzleState::CA_GoalDistEst(PuzzleState& nodeGoal)
-{
-	// Return the estimated cost to goal from this node
-	float cost = 0;
-
-	int hash[3][3][3], goal_hash[3][3][3];
-	RubikCube newGoal;
-
-	// Creating the corect result from a persective point (accounting for color placement)
-	for (int f = 0; f < 6; f++)
-	{
-		for (int i = 0; i < 9; i++)
-		{
-			newGoal.rc[f][i / 3][i % 3] = nodeGoal.RC.rc[f][1][1];
-		}
-	}
-	HashRC(newGoal, goal_hash);
-	HashRC(nodeGoal.RC, hash);
-
-void PuzzleState::SumCost(PuzzleState& nodeGoal, PuzzleState nodeParent)
-{
-	float nodeincrease, erosion;
-
-	nodeincrease = 2.4f - 0.4f * nodeGoal.moves.size();
-	if (nodeincrease < 1.2f) nodeincrease = 1.2f;
-
-
-	nodeGoal.g = nodeParent.g + nodeincrease;
-	nodeGoal.h = GoalDistanceEstimate(nodeGoal);
-	nodeGoal.f = g + h;
+	node.g = G;
+	//node.h = GoalDistanceEstimate(node.RC);
+	node.f = node.g + node.h;
 }
 
 
