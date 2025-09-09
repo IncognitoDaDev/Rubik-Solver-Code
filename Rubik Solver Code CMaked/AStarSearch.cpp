@@ -180,7 +180,7 @@ PuzzleState AStarSearch::SearchSolution(PuzzleState startNode)
 
 	cout << endl;
 	returnMovesInChar(path, a);
-	startCube.RC.queueMove(startCube.RC, a);
+	//startCube.RC.queueMove(startCube.RC, a);
 	startCube.RC.ReadRubik(startCube.RC.dir, startCube.RC.rc);
 	cout << endl << "Solution: " << a;
 	cout << endl << "Total time spent searching: " << total.elapsed() << endl;
@@ -210,7 +210,7 @@ bool AStarSearch::DFS_EdgeOrient(int G, vector<int>& path, int threshold, int &n
 
 		path.push_back(nextMove);
 		returnMovesInChar({ nextMove }, a);
-		RC.queueMove(RC, a);
+		//RC.queueMove(RC, a);
 
 		bool result = DFS_EdgeOrient(g + 10, path, threshold, nextThreshold, RC);
 		if (result == true) return result;
@@ -218,7 +218,7 @@ bool AStarSearch::DFS_EdgeOrient(int G, vector<int>& path, int threshold, int &n
 		if (min > nextThreshold || min == -1) min = nextThreshold;
 
 		returnMovesInChar({ nextMove + (nextMove > 5 ? -6 : 6) }, a);
-		RC.queueMove(RC, a);
+		//RC.queueMove(RC, a);
 		path.pop_back();
 	}
 
@@ -248,7 +248,7 @@ bool AStarSearch::DFS_CornerOrient(int G, vector<int>& path, int threshold, int&
 
 		path.push_back(nextMove);
 		returnMovesInChar({ nextMove }, a);
-		RC.queueMove(RC, a);
+		//RC.queueMove(RC, a);
 
 		bool result = DFS_CornerOrient(g, path, threshold, nextThreshold, RC);
 		if (result == true) return result;
@@ -257,7 +257,7 @@ bool AStarSearch::DFS_CornerOrient(int G, vector<int>& path, int threshold, int&
 
 		if (nextMove > 11) returnMovesInChar({ nextMove }, a);
 		else returnMovesInChar({ nextMove + (nextMove > 5 ? -6 : 6) }, a);
-		RC.queueMove(RC, a);
+		//RC.queueMove(RC, a);
 		path.pop_back();
 	}
 
@@ -287,16 +287,16 @@ bool AStarSearch::DFS_Solve(int G, vector<int>& path, int threshold, int& nextTh
 
 		path.push_back(nextMove);
 		returnMovesInChar({ nextMove }, a);
-		RC.queueMove(RC, a);
+		//RC.queueMove(RC, a);
 
-		bool result = DFS_Solve(g + 5, path, threshold, nextThreshold, RC);
+		bool result = DFS_Solve(g + 7, path, threshold, nextThreshold, RC);
 		if (result == true) return result;
 
 		if (min > nextThreshold || min == -1) min = nextThreshold;
 
 		if (nextMove > 11) returnMovesInChar({ nextMove }, a);
 		else returnMovesInChar({ nextMove + (nextMove > 5 ? -6 : 6) }, a);
-		RC.queueMove(RC, a);
+		//RC.queueMove(RC, a);
 		path.pop_back();
 	}
 

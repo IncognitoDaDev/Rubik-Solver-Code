@@ -33,13 +33,12 @@ public:
 
     void identifyFaces(int(&dir)[6]);
     void rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool undo);
-    void actionRubik(int(&dir)[6], int(&rc)[6][3][3], char action, bool prime);
-    void queueMove(RubikCube& RC, char *move);
+    void actionRubik(int(&dir)[6], int(&rc)[6][3][3], char action, bool prime, bool repeat);
     void ReadRubik(int(&dir)[6], int rc[6][3][3]);
 
 private:
     void rotateMatrix(int(&ma)[3][3], int countRotation, int anticlockwise);
     void mirrorMatrix(int(&ma)[3][3]);
-    void faceRotate(int face, int(&rc)[6][3][3], int anticlockwise);
+    void faceRotate(int face, int(&rc)[6][3][3], int anticlockwise, bool repeat);
 };
 

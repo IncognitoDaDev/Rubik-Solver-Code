@@ -115,7 +115,6 @@
       </OptimizeReferences>
       <EnableCOMDATFolding>
       </EnableCOMDATFolding>
-      <AdditionalOptions>-O2 %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -141,6 +140,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PuzzleState.cpp" />
     <ClCompile Include="RubikCube.cpp" />
+    <ClCompile Include="SerialPort.cpp" />
     <ClCompile Include="Webcam.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -154,6 +154,7 @@
     <ClInclude Include="main.h" />
     <ClInclude Include="PuzzleState.h" />
     <ClInclude Include="RubikCube.h" />
+    <ClInclude Include="SerialPort.h" />
     <ClInclude Include="Webcam.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

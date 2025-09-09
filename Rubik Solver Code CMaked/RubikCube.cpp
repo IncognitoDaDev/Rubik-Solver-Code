@@ -54,39 +54,6 @@ std::string RubikCube::intTocharColorType(int n)
     }
 }
 
-void RubikCube::queueMove(RubikCube& RC, char* move)
-{
-    int nrc[6][3][3];
-    //string debugLog = "";
-
-    char oldMove;
-
-    for (int i = 0; i < strlen(move); i++)
-    {
-        // This might be a bit confusing so lets break it down first [insert_dance_emoji]
-        // This is a small side dish of code to interpreting what kind of moves
-        // We already have the move we want to execute,
-        // we just need to know if its a prime one or a double move or a simple move.
-        if (move[i] == ' ' || move[i] == 'NULL') continue;
-
-        if (move[i] == 39)
-        {
-            RC.actionRubik(RC.dir, RC.rc, oldMove, 1);
-            RC.actionRubik(RC.dir, RC.rc, oldMove, 1);
-        }
-        else if (move[i] == '2')
-        {
-            RC.actionRubik(RC.dir, RC.rc, oldMove, 0);
-        }
-        else
-        {
-            RC.actionRubik(RC.dir, RC.rc, move[i], 0);
-        }
-
-        oldMove = move[i];
-    }
-}
-
 void RubikCube::identifyFaces(int(&dir)[6])
 {
     switch (dir[Front])
@@ -293,6 +260,7 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
         case Up:
             rotateMatrix(rc[dir[Back]], 2, undo);
             break;
+
         case Bottom:
             rotateMatrix(rc[dir[Left]], 2, undo);
             rotateMatrix(rc[dir[Right]], 2, undo);
@@ -301,14 +269,17 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
 
             rotateMatrix(rc[dir[Front]], 2, undo);
             break;
-        case Right:
-            rotateMatrix(rc[dir[Left]], 2, !undo);
-            rotateMatrix(rc[dir[Right]], 2, !undo);
-            rotateMatrix(rc[dir[Up]], 2, !undo);
-            rotateMatrix(rc[dir[Bottom]], 2, !undo);
 
-            rotateMatrix(rc[dir[Front]], 2, undo);
-            rotateMatrix(rc[dir[Back]], 2, undo);
+        case Right: // CORECTARE
+            rotateMatrix(rc[dir[Left]], 1, !undo);
+            rotateMatrix(rc[dir[Right]], 1, !undo);
+            rotateMatrix(rc[dir[Up]], 1, !undo);
+            rotateMatrix(rc[dir[Bottom]], 1, !undo);
+
+            rotateMatrix(rc[dir[Front]], 1, !undo);
+            rotateMatrix(rc[dir[Back]], 1, !undo);
+            break;
+
         case Left:
             rotateMatrix(rc[dir[Left]], 1, undo);
             rotateMatrix(rc[dir[Right]], 1, undo);
@@ -330,20 +301,24 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
 
             rotateMatrix(rc[dir[Front]], 2, !undo);
             break;
+
         case Bottom:
             rotateMatrix(rc[dir[Left]], 2, undo);
             rotateMatrix(rc[dir[Right]], 2, undo);
 
             rotateMatrix(rc[dir[Back]], 2, undo);
             break;
-        case Right:
-            rotateMatrix(rc[dir[Left]], 2, undo);
-            rotateMatrix(rc[dir[Right]], 2, undo);
-            rotateMatrix(rc[dir[Up]], 2, undo);
-            rotateMatrix(rc[dir[Bottom]], 2, undo);
 
-            rotateMatrix(rc[dir[Front]], 2, undo);
-            rotateMatrix(rc[dir[Back]], 2, undo);
+        case Right: // CORECTARE
+            rotateMatrix(rc[dir[Left]], 1, undo);
+            rotateMatrix(rc[dir[Right]], 1, undo);
+            rotateMatrix(rc[dir[Up]], 1, undo);
+            rotateMatrix(rc[dir[Bottom]], 1, undo);
+
+            rotateMatrix(rc[dir[Front]], 1, undo);
+            rotateMatrix(rc[dir[Back]], 1, undo);
+            break;
+
         case Left:
             rotateMatrix(rc[dir[Left]], 1, !undo);
             rotateMatrix(rc[dir[Right]], 1, !undo);
@@ -363,8 +338,8 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
             rotateMatrix(rc[dir[Up]], 1, !undo);
             rotateMatrix(rc[dir[Bottom]], 1, undo);
             rotateMatrix(rc[dir[Right]], 2, undo);
-            //rotateMatrix(rc[dir[Front]], 2, undo);
             break;
+
         case Bottom:
             rotateMatrix(rc[dir[Up]], 1, undo);
             rotateMatrix(rc[dir[Bottom]], 1, !undo);
@@ -372,8 +347,8 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
             rotateMatrix(rc[dir[Back]], 2, undo);
 
             rotateMatrix(rc[dir[Left]], 2, undo);
-            //rotateMatrix(rc[dir[Right]], 2, undo);
             break;
+
         case Front:
             rotateMatrix(rc[dir[Up]], 2, undo);
             rotateMatrix(rc[dir[Front]], 1, !undo);
@@ -382,6 +357,7 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
             rotateMatrix(rc[dir[Left]], 1, undo);
             rotateMatrix(rc[dir[Right]], 1, !undo);
             break;
+
         case Back:
             rotateMatrix(rc[dir[Front]], 1, undo);
             rotateMatrix(rc[dir[Bottom]], 2, undo);
@@ -408,7 +384,6 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
             rotateMatrix(rc[dir[Front]], 2, undo);
             rotateMatrix(rc[dir[Back]], 2, undo);
 
-            //rotateMatrix(rc[dir[Left]], 2, undo);
             rotateMatrix(rc[dir[Right]], 2, undo);
             break;
         case Front:
@@ -473,10 +448,8 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
             rotateMatrix(rc[dir[Right]], 1, undo);
             rotateMatrix(rc[dir[Left]], 1, !undo);
             rotateMatrix(rc[dir[Back]], 2, undo);
-
-            //rotateMatrix(rc[dir[Up]], 2, undo);
-            //rotateMatrix(rc[dir[Bottom]], 2, undo);
             break;
+
         case Back:
             rotateMatrix(rc[dir[Right]], 1, !undo);
             rotateMatrix(rc[dir[Left]], 1, undo);
@@ -484,8 +457,8 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
             rotateMatrix(rc[dir[Up]], 2, undo);
             rotateMatrix(rc[dir[Bottom]], 2, undo);
             break;
+
         case Right:
-            //rotateMatrix(rc[dir[Right]], 2, undo);
             rotateMatrix(rc[dir[Left]], 2, undo);
             rotateMatrix(rc[dir[Front]], 1, !undo);
             rotateMatrix(rc[dir[Back]], 1, undo);
@@ -496,7 +469,6 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
 
         case Left:
             rotateMatrix(rc[dir[Right]], 2, undo);
-            //rotateMatrix(rc[dir[Left]], 2, undo);
             rotateMatrix(rc[dir[Front]], 1, undo);
             rotateMatrix(rc[dir[Back]], 1, !undo);
 
@@ -508,74 +480,78 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
     }
 }
 
-void RubikCube::faceRotate(int face, int(&rc)[6][3][3], int anticlockwise)
+void RubikCube::faceRotate(int face, int(&rc)[6][3][3], int anticlockwise, bool repeat)
 {
-    int tempDir[6];
-    tempDir[0] = face;
+    for (int i = 0; i < 1 + repeat; i++)
+    {
 
-    if (face == White || face == Yellow)
-        tempDir[1] = Blue;
-    else
-        tempDir[1] = White;
+        int tempDir[6];
+        tempDir[0] = face;
 
-    identifyFaces(tempDir);
+        if (face == White || face == Yellow)
+            tempDir[1] = Blue;
+        else
+            tempDir[1] = White;
 
-    rotateFaceToMatchOrientation(tempDir, rc, 0);
+        identifyFaces(tempDir);
 
-    int temp[12];
-    rotateMatrix(rc[tempDir[0]], 1, anticlockwise);
+        rotateFaceToMatchOrientation(tempDir, rc, 0);
 
-    if (anticlockwise)
-        for (int i = 0; i < 12; i++)
-        {
-            switch (i / 3)
+        int temp[12];
+        rotateMatrix(rc[tempDir[0]], 1, anticlockwise);
+
+        if (anticlockwise)
+            for (int i = 0; i < 12; i++)
             {
-            case 0: // left side
-                temp[i] = rc[tempDir[Left]][2 - i][2];
-                break;
-            case 1: // up side
-                temp[i] = rc[tempDir[Up]][2][i % 3];
-                rc[tempDir[Up]][2][i % 3] = temp[i - 3];
-                break;
-            case 2: // right side
-                temp[i] = rc[tempDir[Right]][i % 3][0];
-                rc[tempDir[Right]][i % 3][0] = temp[i - 3];
-                break;
-            case 3: // down side
-                temp[i] = rc[tempDir[Bottom]][0][2 - i % 3];
-                rc[tempDir[Bottom]][0][2 - i % 3] = temp[i - 3];
-                rc[tempDir[Left]][2 - i % 3][2] = temp[i];
-                break;
+                switch (i / 3)
+                {
+                case 0: // left side
+                    temp[i] = rc[tempDir[Left]][2 - i][2];
+                    break;
+                case 1: // up side
+                    temp[i] = rc[tempDir[Up]][2][i % 3];
+                    rc[tempDir[Up]][2][i % 3] = temp[i - 3];
+                    break;
+                case 2: // right side
+                    temp[i] = rc[tempDir[Right]][i % 3][0];
+                    rc[tempDir[Right]][i % 3][0] = temp[i - 3];
+                    break;
+                case 3: // down side
+                    temp[i] = rc[tempDir[Bottom]][0][2 - i % 3];
+                    rc[tempDir[Bottom]][0][2 - i % 3] = temp[i - 3];
+                    rc[tempDir[Left]][2 - i % 3][2] = temp[i];
+                    break;
+                }
             }
-        }
-    else
-        for (int i = 0; i < 12; i++)
-        {
-            switch (i / 3)
+        else
+            for (int i = 0; i < 12; i++)
             {
-            case 0: // left side
-                temp[i] = rc[tempDir[Left]][i][2];
-                break;
-            case 1: // bottom side
-                temp[i] = rc[tempDir[Bottom]][0][i % 3];
-                rc[tempDir[Bottom]][0][i % 3] = temp[i - 3];
-                break;
-            case 2: // right side
-                temp[i] = rc[tempDir[Right]][2 - i % 3][0];
-                rc[tempDir[Right]][2 - i % 3][0] = temp[i - 3];
-                break;
-            case 3: // up side
-                temp[i] = rc[tempDir[Up]][2][2 - i % 3];
-                rc[tempDir[Up]][2][2 - i % 3] = temp[i - 3];
-                rc[tempDir[Left]][i % 3][2] = temp[i];
-                break;
+                switch (i / 3)
+                {
+                case 0: // left side
+                    temp[i] = rc[tempDir[Left]][i][2];
+                    break;
+                case 1: // bottom side
+                    temp[i] = rc[tempDir[Bottom]][0][i % 3];
+                    rc[tempDir[Bottom]][0][i % 3] = temp[i - 3];
+                    break;
+                case 2: // right side
+                    temp[i] = rc[tempDir[Right]][2 - i % 3][0];
+                    rc[tempDir[Right]][2 - i % 3][0] = temp[i - 3];
+                    break;
+                case 3: // up side
+                    temp[i] = rc[tempDir[Up]][2][2 - i % 3];
+                    rc[tempDir[Up]][2][2 - i % 3] = temp[i - 3];
+                    rc[tempDir[Left]][i % 3][2] = temp[i];
+                    break;
+                }
             }
-        }
 
-    rotateFaceToMatchOrientation(tempDir, rc, 1);
+        rotateFaceToMatchOrientation(tempDir, rc, 1);
+    }
 }
 
-void RubikCube::actionRubik(int(&dir)[6], int(&rc)[6][3][3], char action, bool prime)
+void RubikCube::actionRubik(int(&dir)[6], int(&rc)[6][3][3], char action, bool prime, bool repeat)
 {
     mirrorMatrix(rc[dir[Back]]);
     rotateFaceToMatchOrientation(dir, rc, 1);
@@ -587,14 +563,14 @@ void RubikCube::actionRubik(int(&dir)[6], int(&rc)[6][3][3], char action, bool p
         break;
 
         // normal moveset
-    case 'U': faceRotate(dir[Up], rc, !prime); break;
-    case 'D': faceRotate(dir[Bottom], rc, !prime); break;
+    case 'U': faceRotate(dir[Up], rc, !prime, repeat); break;
+    case 'D': faceRotate(dir[Bottom], rc, !prime, repeat); break;
 
-    case 'L': faceRotate(dir[Left], rc, !prime); break;
-    case 'R': faceRotate(dir[Right], rc, !prime); break;
+    case 'L': faceRotate(dir[Left], rc, !prime, repeat); break;
+    case 'R': faceRotate(dir[Right], rc, !prime, repeat); break;
 
-    case 'F': faceRotate(dir[Front], rc, !prime); break;
-    case 'B': faceRotate(dir[Back], rc, !prime); break;
+    case 'F': faceRotate(dir[Front], rc, !prime, repeat); break;
+    case 'B': faceRotate(dir[Back], rc, !prime, repeat); break;
 
         // cube rotations (not to be confused with substited letters for prime moves)
     case 'x': // rotate the front face to up face

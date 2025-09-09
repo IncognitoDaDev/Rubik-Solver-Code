@@ -705,7 +705,7 @@ int PuzzleState::GoalDistanceEstimate_Solve(RubikCube node)
 	// Return the estimated cost to goal from this node
 	int cost = 0;
 
-	/*int hash[3][3][3];
+	int hash[3][3][3];
 	HashRC(node, hash);
 
 	int cubies[20] = { 0, 2, 20, 22, 200, 202, 220, 222, 1, 10, 12, 21, 100, 102, 120, 122, 201, 210, 212, 221 };
@@ -719,15 +719,15 @@ int PuzzleState::GoalDistanceEstimate_Solve(RubikCube node)
 		int calc = abs(cube / 100 - zyx / 100) + abs(cube / 10 % 10 - zyx / 10 % 10) + abs(cube % 10 - zyx % 10);
 
 		cost += calc;
-	}*/
+	}
 
-	for (int f = 0; f < 6; f++)
+	/*for (int f = 0; f < 6; f++)
 	{
 		for (int i = 0; i < 9; i++)
 		{
 			if (node.rc[f][i / 3][i % 3] != node.rc[f][1][1]) cost += 1;
 		}
-	}
+	}*/
 
 	return cost;
 }
