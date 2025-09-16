@@ -137,12 +137,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AStarSearch.cpp" />
-    <ClCompile Include="HashedRubikCube.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PuzzleState.cpp" />
     <ClCompile Include="RubikCube.cpp" />
-    <ClCompile Include="SerialPort.cpp" />
-    <ClCompile Include="Webcam.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="RubikCube.txt" />
@@ -152,12 +149,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AStarSearch.h" />
-    <ClInclude Include="HashedRubikCube.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="PuzzleState.h" />
     <ClInclude Include="RubikCube.h" />
-    <ClInclude Include="SerialPort.h" />
-    <ClInclude Include="Webcam.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
