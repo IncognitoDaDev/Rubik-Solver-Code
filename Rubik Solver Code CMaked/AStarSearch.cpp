@@ -180,7 +180,7 @@ PuzzleState AStarSearch::SearchSolution(PuzzleState startNode)
 
 	cout << endl;
 	returnMovesInChar(path, a);
-	//startCube.RC.queueMove(startCube.RC, a);
+	startCube.RC.queueMove(startCube.RC, a, 0);
 	startCube.RC.ReadRubik(startCube.RC.dir, startCube.RC.rc);
 	cout << endl << "Solution: " << a;
 	cout << endl << "Total time spent searching: " << total.elapsed() << endl;
@@ -287,7 +287,7 @@ bool AStarSearch::DFS_Solve(int G, vector<int>& path, int threshold, int& nextTh
 
 		path.push_back(nextMove);
 		returnMovesInChar({ nextMove }, a);
-		//RC.queueMove(RC, a);
+		RC.queueMove(RC, a, 0);
 
 		bool result = DFS_Solve(g + 7, path, threshold, nextThreshold, RC);
 		if (result == true) return result;
@@ -296,7 +296,7 @@ bool AStarSearch::DFS_Solve(int G, vector<int>& path, int threshold, int& nextTh
 
 		if (nextMove > 11) returnMovesInChar({ nextMove }, a);
 		else returnMovesInChar({ nextMove + (nextMove > 5 ? -6 : 6) }, a);
-		//RC.queueMove(RC, a);
+		RC.queueMove(RC, a, 0);
 		path.pop_back();
 	}
 

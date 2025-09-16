@@ -137,6 +137,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AStarSearch.cpp" />
+    <ClCompile Include="HashedRubikCube.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="PuzzleState.cpp" />
     <ClCompile Include="RubikCube.cpp" />
@@ -151,6 +152,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AStarSearch.h" />
+    <ClInclude Include="HashedRubikCube.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="PuzzleState.h" />
     <ClInclude Include="RubikCube.h" />

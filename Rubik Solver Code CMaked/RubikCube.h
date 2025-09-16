@@ -34,6 +34,7 @@ public:
     void identifyFaces(int(&dir)[6]);
     void rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool undo);
     void actionRubik(int(&dir)[6], int(&rc)[6][3][3], char action, bool prime, bool repeat);
+    void queueMove(RubikCube& RC, char* input, int i);
     void ReadRubik(int(&dir)[6], int rc[6][3][3]);
 
 private:

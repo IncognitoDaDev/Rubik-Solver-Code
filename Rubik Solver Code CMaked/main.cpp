@@ -41,10 +41,13 @@ void RubikCubeSimulator(RubikCube RC)
     SerialPort Uno;
     WCHAR Port[] = L"\\\\.\\COM5";
 
+    AStarSearch algo;
+    PuzzleState startnode;
+
     bool play = true, syncMovesWithRealRC = false;
     char input[256];
 
-    char q[9][256] = {"B F D B F2 U' D2"};
+    char q[9][256] = {"B F D B F2 U' D2", "L U2 B' L' D' B' L2 B U2 R U' B2 L' R F2 B2 U D2 B R' B2 R' U2 R' L' "};
 
     while (play)
     {
@@ -61,7 +64,7 @@ void RubikCubeSimulator(RubikCube RC)
             break;
 
         case '-': // Repeat (or stop repeating) moves to Arduino Uno throught serial port
-            syncMovesWithRealRC != syncMovesWithRealRC;
+            syncMovesWithRealRC = !syncMovesWithRealRC;
 
             if (syncMovesWithRealRC)
             {
@@ -79,45 +82,27 @@ void RubikCubeSimulator(RubikCube RC)
             break;
 
         case '+': // Solve current Rubik Cube
+            cout << endl << "Initializing the solver..." << endl;
+            ResetSearch(algo, startnode);
+            startnode.RC.copyRC(startnode.RC.rc, RC.rc);
+
+            RC.copyRC(RC.rc, algo.SearchSolution(startnode).RC.rc);
 
             i++;
             break;
 
         default:
-            if (input[0] > 0 && input[0] <= 9)
+            if (input[0] > '0' && input[0] <= '9')
             {
-                cout << endl << "Scrambling the code in a predetermined pattern: " << q[input[0]] << endl;
-                strcpy(input, q[input[0]]);
+                cout << endl << "Scrambling the code in a predetermined pattern: " << q[input[0] - '0' - 1] << endl;
+                strcpy(input, q[input[0] - '0' - 1]);
                 i++;
             }
             break;
         }
 
         // Now the algorithm for interpreting the actions
-        int specialMove = 0;
-        for (; i < strlen(input); i++)
-        {
-            if (input[i] == ' ' || input[i] == '\0') continue;
-
-            if (i + 1 < strlen(input))
-            {
-                if (input[i + 1] == 39)
-                {
-                    specialMove++;
-                    RC.actionRubik(RC.dir, RC.rc, input[i], true, false);
-                }
-                
-                if (input[i + 1] == '2')
-                {
-                    specialMove++;
-                    RC.actionRubik(RC.dir, RC.rc, input[i], false, true);
-                }
-            }
-
-            if (specialMove == 1) i++;
-            else RC.actionRubik(RC.dir, RC.rc, input[i], false, false);
-        }
-
+        RC.queueMove(RC, input, i);
         RC.ReadRubik(RC.dir, RC.rc); 
 
         if (syncMovesWithRealRC)

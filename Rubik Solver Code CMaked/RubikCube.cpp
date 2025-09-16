@@ -354,7 +354,7 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
             rotateMatrix(rc[dir[Front]], 1, !undo);
             rotateMatrix(rc[dir[Back]], 1, !undo);
 
-            rotateMatrix(rc[dir[Left]], 1, undo);
+            rotateMatrix(rc[dir[Left]], 1, !undo);
             rotateMatrix(rc[dir[Right]], 1, !undo);
             break;
 
@@ -378,6 +378,7 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
 
             rotateMatrix(rc[dir[Left]], 2, undo);
             break;
+
         case Bottom:
             rotateMatrix(rc[dir[Up]], 1, !undo);
             rotateMatrix(rc[dir[Bottom]], 1, undo);
@@ -386,6 +387,7 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
 
             rotateMatrix(rc[dir[Right]], 2, undo);
             break;
+
         case Front:
             rotateMatrix(rc[dir[Up]], 2, undo);
             rotateMatrix(rc[dir[Front]], 1, undo);
@@ -394,6 +396,7 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
             rotateMatrix(rc[dir[Left]], 1, undo);
             rotateMatrix(rc[dir[Right]], 1, undo);
             break;
+
         case Back:
             rotateMatrix(rc[dir[Front]], 1, !undo);
             rotateMatrix(rc[dir[Bottom]], 2, undo);
@@ -416,11 +419,13 @@ void RubikCube::rotateFaceToMatchOrientation(int dir[6], int(&rc)[6][3][3], bool
             rotateMatrix(rc[dir[Up]], 2, undo);
             rotateMatrix(rc[dir[Bottom]], 2, undo);
             break;
+
         case Back:
             rotateMatrix(rc[dir[Right]], 1, !undo);
             rotateMatrix(rc[dir[Left]], 1, undo);
             rotateMatrix(rc[dir[Back]], 2, undo);
             break;
+
         case Right:
             rotateMatrix(rc[dir[Right]], 2, undo);
             rotateMatrix(rc[dir[Front]], 1, !undo);
@@ -548,6 +553,38 @@ void RubikCube::faceRotate(int face, int(&rc)[6][3][3], int anticlockwise, bool 
             }
 
         rotateFaceToMatchOrientation(tempDir, rc, 1);
+    }
+}
+
+void RubikCube::queueMove(RubikCube &RC, char* input, int i)
+{
+    // Now the algorithm for interpreting the actions
+    int specialMove = 0;
+    for (; i < strlen(input); i++)
+    {
+        if (input[i] == ' ' || input[i] == '\0') continue;
+
+        if (i + 1 < strlen(input))
+        {
+            if (input[i + 1] == 39)
+            {
+                specialMove = 1;
+                RC.actionRubik(RC.dir, RC.rc, input[i], true, false);
+            }
+
+            if (input[i + 1] == '2')
+            {
+                specialMove = 1;
+                RC.actionRubik(RC.dir, RC.rc, input[i], false, true);
+            }
+        }
+
+        if (specialMove == 1)
+        {
+            i++;
+            specialMove = 0;
+        }
+        else RC.actionRubik(RC.dir, RC.rc, input[i], false, false);
     }
 }
 
