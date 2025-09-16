@@ -16,6 +16,6 @@ Due to many issues the way compiler handles external libraries, the released pro
 - Relay to the real rubik cube throught an arduino UNO's serial port
 - Solve the Rubik Cube using IDA* algorithm
 
-# The code is not able:
+# The code is NOT able to:
 - Not solve a properly scrambled rubik cube (unless the rubik cube can be solved in 10-12 moves)
     
