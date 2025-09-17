@@ -33,7 +33,7 @@ The RubikCube is structured as following:
 <br><br>**Note: Due to the faulty color positioning of my real rubik, orange and red are switched**
 
 ## Commands:
-`0` = Ends the simulator
-`+` = Solves the cube and returns a string of moves as solution
-`1`, `2` = Pre-set string of moves by me for testing
+- `0` = Ends the simulator
+- `+` = Solves the cube and returns a string of moves as solution
+- `1`, `2` = Pre-set string of moves by me for testing
 
