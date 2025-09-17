@@ -11,13 +11,13 @@ And relay the moves to the rubik cube in the real world.
 > [!NOTE]
 > Due to many issues the way compiler handles external libraries, the released project will only contain the simulator and solver.
 
-# The code is able to:
+## The code is able to:
 - Digitalize a rubik cube utilizing a method of choice: throught the webcam or throught importing a file
 - Take input and translate them into moves for the rubik cube
 - Relay to the real rubik cube throught an arduino UNO's serial port
 - Solve the Rubik Cube using IDA* algorithm
 
-# The code is NOT able to:
+## The code is NOT able to:
 - Not solve a properly scrambled rubik cube (unless the rubik cube can be solved in 10-12 moves)
 
 # How to use:
