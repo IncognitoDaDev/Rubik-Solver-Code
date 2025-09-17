@@ -6,7 +6,7 @@ as an attempt to improve my coding capabilities and have something to show durin
 
 # The concept:
 The code will scan a rubik cube utilizing a webcam, translate it into data composed out of a series of 2D matrix and be able to rotate
-the digitalized rubik cube in the console throught the well-known rubik cube notations (notations being the ones found in this website: https://jperm.net/3x3/moves).
+the digitalized rubik cube in the console throught the well-known rubik cube [notations](https://jperm.net/3x3/moves).
 And relay the moves to the rubik cube in the real world.
 > [!NOTE]
 > Due to many issues the way compiler handles external libraries, the released project will only contain the simulator and solver.
