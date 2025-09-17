@@ -8,7 +8,8 @@ as an attempt to improve my coding capabilities and have something to show durin
 The code will scan a rubik cube utilizing a webcam, translate it into data composed out of a series of 2D matrix and be able to rotate
 the digitalized rubik cube in the console throught the well-known rubik cube notations (notations being the ones found in this website: https://jperm.net/3x3/moves).
 And relay the moves to the rubik cube in the real world.
-Due to many issues the way compiler handles external libraries, the released project will only contain the simulator and solver.
+> [!NOTE]
+> Due to many issues the way compiler handles external libraries, the released project will only contain the simulator and solver.
 
 # The code is able to:
 - Digitalize a rubik cube utilizing a method of choice: throught the webcam or throught importing a file
@@ -30,7 +31,8 @@ The RubikCube is structured as following:
 - Orange = 4
 - Green = 5
 - The order of 3x3 matrices represent the following order (*from left to right*): Front Up Back Left Right Bottom
-<br><br>**Note: Due to the faulty color positioning of my real rubik, orange and red are switched**
+> [!NOTE]
+> Due to the faulty color positioning of my real rubik, **orange and red are switched**
 
 ## Commands:
 - `0` = Ends the simulator
