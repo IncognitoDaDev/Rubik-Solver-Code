@@ -30,7 +30,7 @@ The RubikCube is structured as following:
 - Orange = 4
 - Green = 5
 - The order of 3x3 matrices represent the following order (*from left to right*): Front Up Back Left Right Bottom
-**Note: Due to the faulty color positioning of my real rubik, orange and red are switched**
+<br><br>**Note: Due to the faulty color positioning of my real rubik, orange and red are switched**
 
 ## Commands:
 `0` = Ends the simulator
